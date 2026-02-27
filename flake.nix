@@ -1,4 +1,15 @@
 {
+  nixConfig = {
+    extra-substituters = [
+      "https://dxvim.cachix.org"
+      "https://dxshell.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "dxvim.cachix.org-1:bEdE17MPsQMGnnbsH8v3Xw/A3VneDtmwtDI8qb5h+/k="
+      "dxshell.cachix.org-1:762do0J9EGCay3Pt1x+sRWOivhxsixwlkV469hCvVu0="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager = {
