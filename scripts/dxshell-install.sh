@@ -62,6 +62,8 @@ cat >"${HM_CONFIG_DIR}/flake.nix" <<FLAKE_EOF
             homeDirectory = "${DXSHELL_USER_HOME}";
             stateVersion = "24.05";
           };
+          nixpkgs.config.allowUnfreePredicate = pkg:
+            builtins.elem (nixpkgs.lib.getName pkg) dxshell.unfreePackages;
           ${SESSION_VARS_BLOCK}
         }
       ];
