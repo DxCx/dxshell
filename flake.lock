@@ -31,11 +31,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1772187200,
-        "narHash": "sha256-QgmbD3gXYLRSwWakNch3g97dBTPiuarXuaKwZlq97PA=",
+        "lastModified": 1772255863,
+        "narHash": "sha256-jVzrWk9B6b2fgS8Lptvn1QMEM/g+QXxefhPptehfPe4=",
         "owner": "DxCx",
         "repo": "dxnixinfra",
-        "rev": "992af791dd9130df0ece034730df7a17260a0885",
+        "rev": "b6d7efb23201cabec10be30c6ecbb0e2eeb1c36a",
         "type": "github"
       },
       "original": {
@@ -56,11 +56,11 @@
         "sidekick-nvim": "sidekick-nvim"
       },
       "locked": {
-        "lastModified": 1772241256,
-        "narHash": "sha256-ldGzAByfyyxarSHoqa5yUuab/WJ26GR4d7r9q+YV0Mw=",
+        "lastModified": 1772257610,
+        "narHash": "sha256-bfSlVLRJbY6CG2z/rDtFFfQ+LOB7dXWoMP8myXTnfe0=",
         "owner": "DxCx",
         "repo": "dxvim",
-        "rev": "f44c8cf4d56f21e12396c23dd273bbf303299ddc",
+        "rev": "a7575308502236d23140f24eb5d7c5d6702eb03c",
         "type": "github"
       },
       "original": {
