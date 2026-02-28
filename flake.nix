@@ -58,6 +58,8 @@
                 inherit username homeDirectory;
                 stateVersion = "24.05";
               };
+              nixpkgs.config.allowUnfreePredicate = pkg:
+                builtins.elem (inputs.nixpkgs.lib.getName pkg) self.unfreePackages;
             })
             hmModule
           ];
