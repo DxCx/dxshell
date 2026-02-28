@@ -3,16 +3,35 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone
 #   curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- install
+#   GIT_BRANCH=fix-standalone curl ... | sh -s -- standalone  # use a specific branch
 set -eu
 
 REPO_URL="https://github.com/DxCx/dxshell.git"
+GIT_BRANCH="${GIT_BRANCH:-master}"
 
 # ---------------------------------------------------------------------------
 # Parse arguments
 # ---------------------------------------------------------------------------
-MODE="${1:-}"
+CLEAN=0
+MODE=""
+POSITIONAL_IDX=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --clean) CLEAN=1 ;;
+    *)
+      POSITIONAL_IDX=$((POSITIONAL_IDX + 1))
+      if [ "$POSITIONAL_IDX" = "1" ]; then
+        MODE="$arg"
+      elif [ "$POSITIONAL_IDX" = "2" ]; then
+        DXSHELL_DIR="$arg"
+      fi
+      ;;
+  esac
+done
+
 if [ -z "$MODE" ]; then
-  echo "Usage: setup.sh <standalone|install> [DXSHELL_DIR]" >&2
+  echo "Usage: setup.sh <standalone|install> [--clean] [DXSHELL_DIR]" >&2
   exit 1
 fi
 
@@ -24,10 +43,8 @@ case "$MODE" in
     ;;
 esac
 
-# Directory: $2 > $DXSHELL_DIR env > default
-if [ -n "${2:-}" ]; then
-  DXSHELL_DIR="$2"
-elif [ -z "${DXSHELL_DIR:-}" ]; then
+# Directory: env > default (positional may have been set above)
+if [ -z "${DXSHELL_DIR:-}" ]; then
   DXSHELL_DIR="$HOME/.dxshell"
 fi
 
@@ -37,8 +54,24 @@ case "$DXSHELL_DIR" in
   *) DXSHELL_DIR="$PWD/$DXSHELL_DIR" ;;
 esac
 
+# Install mode always cleans to ensure a fresh activation
+if [ "$MODE" = "install" ]; then
+  CLEAN=1
+fi
+
 # ---------------------------------------------------------------------------
-# 1. Check Nix is installed
+# 1. Clean previous state (if requested)
+# ---------------------------------------------------------------------------
+if [ "$CLEAN" = "1" ]; then
+  echo "Cleaning previous dxshell state..."
+  rm -rf "$HOME/.dxshell-home" "$HOME/.cache/dxshell" /tmp/dxshell-home
+  rm -rf "$DXSHELL_DIR"
+  rm -f "$HOME/.local/bin/dxshell"
+  echo "Done."
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Check Nix is installed
 # ---------------------------------------------------------------------------
 ensure_nix() {
   if command -v nix >/dev/null 2>&1; then
@@ -70,30 +103,65 @@ ensure_nix() {
 ensure_nix
 
 # ---------------------------------------------------------------------------
-# 2. Enable flakes if needed
+# 3. Ensure nix-command and flakes are available
 # ---------------------------------------------------------------------------
-if ! nix flake --help >/dev/null 2>&1; then
-  echo "Enabling Nix flakes..."
-  mkdir -p "$HOME/.config/nix"
-  if ! grep -q "experimental-features.*flakes" "$HOME/.config/nix/nix.conf" 2>/dev/null; then
-    echo "experimental-features = nix-command flakes" >>"$HOME/.config/nix/nix.conf"
-  fi
-  echo "Flakes enabled in ~/.config/nix/nix.conf"
-fi
+# NIX_CONFIG is the most reliable way to enable experimental features —
+# detection via `nix run --help` or `nix flake --help` is unreliable because
+# some Nix versions show help even when the feature is disabled.
+# The variable is additive and harmless when the features are already enabled.
+export NIX_CONFIG="experimental-features = nix-command flakes
+${NIX_CONFIG:-}"
 
 # ---------------------------------------------------------------------------
-# 3. Clone or update the repository
+# 4. Ensure current user is trusted (multi-user daemon setups)
 # ---------------------------------------------------------------------------
+ensure_trusted_user() {
+  # Only relevant when nix-daemon is running (multi-user install)
+  if ! systemctl is-active --quiet nix-daemon 2>/dev/null; then
+    return 0
+  fi
+
+  user="$(id -un)"
+
+  # root is always trusted
+  if [ "$user" = "root" ]; then
+    return 0
+  fi
+
+  # Check if user (or wildcard) is already in trusted-users / extra-trusted-users
+  if grep -qE "^(extra-)?trusted-users\b.*\b($user|\*)\b" /etc/nix/nix.conf 2>/dev/null; then
+    return 0
+  fi
+
+  echo ""
+  echo "Multi-user Nix detected but '$user' is not a trusted user."
+  echo "This is needed so Nix can use the dxshell/dxvim binary caches."
+  echo "Adding '$user' to extra-trusted-users in /etc/nix/nix.conf (requires sudo)."
+  echo ""
+
+  echo "extra-trusted-users = $user" | sudo tee -a /etc/nix/nix.conf >/dev/null
+  sudo systemctl restart nix-daemon
+  echo "Done — '$user' is now a trusted Nix user."
+}
+
+ensure_trusted_user
+
+# ---------------------------------------------------------------------------
+# 5. Clone or update the repository
+# ---------------------------------------------------------------------------
+
 run_git() {
   if command -v git >/dev/null 2>&1; then
     git "$@"
   else
-    nix run nixpkgs#git -- "$@"
+    nix run --accept-flake-config nixpkgs#git -- "$@"
   fi
 }
 
 if [ -d "$DXSHELL_DIR/.git" ]; then
-  echo "Updating existing clone at $DXSHELL_DIR..."
+  echo "Updating existing clone at $DXSHELL_DIR (branch: $GIT_BRANCH)..."
+  run_git -C "$DXSHELL_DIR" fetch origin
+  run_git -C "$DXSHELL_DIR" checkout "$GIT_BRANCH"
   run_git -C "$DXSHELL_DIR" pull --ff-only
 elif [ -d "$DXSHELL_DIR" ]; then
   # Directory exists but is not a git repo
@@ -101,14 +169,14 @@ elif [ -d "$DXSHELL_DIR" ]; then
   echo "Remove it or choose a different directory." >&2
   exit 1
 else
-  echo "Cloning dxshell to $DXSHELL_DIR..."
-  run_git clone "$REPO_URL" "$DXSHELL_DIR"
+  echo "Cloning dxshell to $DXSHELL_DIR (branch: $GIT_BRANCH)..."
+  run_git clone -b "$GIT_BRANCH" "$REPO_URL" "$DXSHELL_DIR"
 fi
 
 export DXSHELL_DIR
 
 # ---------------------------------------------------------------------------
-# 4. Mode-specific steps
+# 6. Mode-specific steps
 # ---------------------------------------------------------------------------
 case "$MODE" in
   standalone)
@@ -117,7 +185,7 @@ case "$MODE" in
     {
       echo '#!/bin/sh'
       echo "export DXSHELL_FLAKE='$DXSHELL_DIR'"
-      echo "exec nix run 'path:$DXSHELL_DIR'"
+      echo "exec nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config 'path:$DXSHELL_DIR'"
     } >"$HOME/.local/bin/dxshell"
     chmod +x "$HOME/.local/bin/dxshell"
     echo ""
@@ -135,12 +203,12 @@ case "$MODE" in
     echo ""
     echo "Starting dxshell..."
     export DXSHELL_FLAKE="$DXSHELL_DIR"
-    exec nix run "path:$DXSHELL_DIR"
+    exec nix run --accept-flake-config "path:$DXSHELL_DIR"
     ;;
 
   install)
     echo ""
     echo "Running permanent install..."
-    nix run "path:$DXSHELL_DIR#dxshell-install"
+    nix run --accept-flake-config "path:$DXSHELL_DIR#dxshell-install"
     ;;
 esac
