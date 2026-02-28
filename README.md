@@ -88,7 +88,7 @@ After either install, open a new shell or `source` the profile script as instruc
 
 ## Step 2: Quick Start (Standalone)
 
-No permanent changes to your system. Everything lives under `~/.cache/dxshell`.
+No permanent changes to your system. Everything lives under `~/.dxshell-home`.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone
@@ -109,10 +109,16 @@ cd ~/.dxshell && git pull
 dxshell
 ```
 
-Cleanup — remove everything:
+Clean reinstall (wipes all previous state and starts fresh):
 
 ```bash
-rm -rf ~/.dxshell ~/.cache/dxshell ~/.local/bin/dxshell
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone --clean
+```
+
+Manual cleanup — remove everything:
+
+```bash
+rm -rf ~/.dxshell ~/.dxshell-home ~/.cache/dxshell ~/.local/bin/dxshell
 ```
 
 ## Step 3: Permanent Install
@@ -154,6 +160,12 @@ curl -fsSL .../setup.sh | sh -s -- standalone ~/projects/dxshell
 
 # Install with custom dir
 DXSHELL_DIR=~/projects/dxshell curl -fsSL .../setup.sh | sh -s -- install
+```
+
+### Testing a specific branch
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/<branch>/bin/setup.sh | GIT_BRANCH=<branch> sh -s -- standalone
 ```
 
 ### Direct nix run (no setup.sh)
