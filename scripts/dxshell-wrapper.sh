@@ -16,6 +16,21 @@ mkdir -p "${DXSHELL_HOME}" "${DXSHELL_CACHE}"
 rm -rf "/tmp/dxshell-home"
 ln -sfn "${DXSHELL_HOME}" "/tmp/dxshell-home"
 
+# Ensure nix tools are on PATH — when running as a login shell,
+# nix profile scripts haven't been sourced yet.
+if ! command -v nix-env >/dev/null 2>&1; then
+  for _nix_profile_script in \
+    "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh" \
+    "${REAL_HOME}/.nix-profile/etc/profile.d/nix.sh"; do
+    if [ -f "${_nix_profile_script}" ]; then
+      # shellcheck disable=SC1090
+      . "${_nix_profile_script}"
+      break
+    fi
+  done
+  unset _nix_profile_script
+fi
+
 # Check if we need to (re-)activate
 NEEDS_ACTIVATE=0
 if [ ! -f "${ACTIVATION_STAMP}" ]; then
@@ -35,7 +50,8 @@ if [ "${NEEDS_ACTIVATE}" = "1" ]; then
   # Sanity check
   if [ ! -f "${DXSHELL_HOME}/.zshrc" ]; then
     echo "dxshell: error: activation failed (.zshrc not found)" >&2
-    exit 1
+    echo "dxshell: falling back to basic shell" >&2
+    exec /bin/bash -l
   fi
 
   # Record the current generation for cache invalidation
@@ -66,4 +82,9 @@ export HOME="${DXSHELL_HOME}"
 export PATH="${DXSHELL_HOME}/.nix-profile/bin${PATH:+:$PATH}"
 # Reconnect stdin to the real terminal — when invoked via `curl | sh`,
 # stdin is the pipe (at EOF), which causes zsh to exit immediately.
-exec @ZSH@/bin/zsh -l </dev/tty
+# When used as a login shell, stdin is already a tty.
+if [ -t 0 ]; then
+  exec @ZSH@/bin/zsh -l
+else
+  exec @ZSH@/bin/zsh -l </dev/tty
+fi
