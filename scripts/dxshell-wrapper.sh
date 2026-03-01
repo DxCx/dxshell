@@ -2,19 +2,20 @@
 set -euo pipefail
 
 REAL_HOME="${HOME}"
-DXSHELL_CACHE="${HOME}/.cache/dxshell"
-DXSHELL_HOME="${HOME}/.dxshell-home"
+DXSHELL_STATE="${DXSHELL_STATE_DIR:-${HOME}/.dxshell-state}"
+DXSHELL_HOME="${DXSHELL_STATE}/home"
 ACTIVATION_STORE_PATH="@ACTIVATION_PACKAGE@"
-ACTIVATION_STAMP="${DXSHELL_CACHE}/current-generation"
+ACTIVATION_STAMP="${DXSHELL_STATE}/current-generation"
+HM_HOME_DIR="@HM_HOME_DIR@"
 
-mkdir -p "${DXSHELL_HOME}" "${DXSHELL_CACHE}"
+mkdir -p "${DXSHELL_HOME}"
 
-# HM bakes homeDirectory ("/tmp/dxshell-home") into generated configs
-# (XDG paths, bat cache, profile scripts).  Symlink it to the real home
-# so those paths resolve at runtime.
+# HM bakes homeDirectory into generated configs (XDG paths, bat cache,
+# profile scripts).  Symlink it to the real home so those paths resolve
+# at runtime.
 # Remove stale dir/symlink before recreating (ln -sfn won't replace a directory)
-rm -rf "/tmp/dxshell-home"
-ln -sfn "${DXSHELL_HOME}" "/tmp/dxshell-home"
+rm -rf "${HM_HOME_DIR}"
+ln -sfn "${DXSHELL_HOME}" "${HM_HOME_DIR}"
 
 # Ensure nix tools are on PATH — when running as a login shell,
 # nix profile scripts haven't been sourced yet.

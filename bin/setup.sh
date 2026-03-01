@@ -64,7 +64,7 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$CLEAN" = "1" ]; then
   echo "Cleaning previous dxshell state..."
-  rm -rf "$HOME/.dxshell-home" "$HOME/.cache/dxshell" /tmp/dxshell-home
+  rm -rf "$HOME/.dxshell-state" /tmp/dxshell-home
   rm -rf "$DXSHELL_DIR"
   rm -f "$HOME/.local/bin/dxshell"
   echo "Done."
