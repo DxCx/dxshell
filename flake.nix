@@ -67,7 +67,7 @@
 
         inherit (hmConfig) activationPackage;
 
-        dxshell_package = import ./packages/dxshell-wrapper.nix {inherit pkgs activationPackage;};
+        dxshell_package = import ./packages/dxshell-wrapper.nix {inherit pkgs activationPackage homeDirectory;};
         dxshell_install = import ./packages/dxshell-install.nix {inherit pkgs dxshell_package;};
 
         infraOutputs = dxnixinfra.lib.mkFlakeOutputs {
