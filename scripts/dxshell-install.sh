@@ -1,116 +1,45 @@
 # shellcheck shell=bash
 set -euo pipefail
 
-DXSHELL_USER="${USER}"
-DXSHELL_USER_HOME="${HOME}"
-HM_CONFIG_DIR="${HOME}/.config/home-manager"
+DXSHELL_BIN="${HOME}/.local/bin/dxshell"
+DXSHELL_GCROOT_DIR="${HOME}/.local/share/dxshell"
+DXSHELL_STORE_PATH="@DXSHELL_PACKAGE@"
 
-echo "dxshell: permanent install for ${DXSHELL_USER} (${DXSHELL_USER_HOME})"
+echo "dxshell: installing standalone shell for ${USER}"
 echo ""
 
-# Detect architecture
-ARCH="$(uname -m)"
-case "${ARCH}" in
-  x86_64) SYSTEM="x86_64-linux" ;;
-  aarch64) SYSTEM="aarch64-linux" ;;
-  *)
-    echo "error: unsupported architecture: ${ARCH}" >&2
-    exit 1
-    ;;
-esac
-echo "Detected system: ${SYSTEM}"
+# 1. Create ~/.local/bin/dxshell symlink to the nix store binary
+mkdir -p "$(dirname "${DXSHELL_BIN}")"
+ln -sfn "${DXSHELL_STORE_PATH}/bin/dxshell" "${DXSHELL_BIN}"
+echo "Installed: ${DXSHELL_BIN} -> ${DXSHELL_STORE_PATH}/bin/dxshell"
 
-# Determine flake URL: local clone (via DXSHELL_DIR) or GitHub
-if [ -n "${DXSHELL_DIR:-}" ] && [ -d "${DXSHELL_DIR}/.git" ]; then
-  DXSHELL_FLAKE_URL="path:${DXSHELL_DIR}"
-  SESSION_VARS_BLOCK="home.sessionVariables.DXSHELL_FLAKE = \"${DXSHELL_DIR}\";"
-  echo "Using local clone: ${DXSHELL_DIR}"
-else
-  DXSHELL_FLAKE_URL="github:DxCx/dxshell"
-  SESSION_VARS_BLOCK=""
+# 2. Add a nix GC root to prevent garbage collection
+mkdir -p "${DXSHELL_GCROOT_DIR}"
+ln -sfn "${DXSHELL_STORE_PATH}" "${DXSHELL_GCROOT_DIR}/gcroot"
+echo "GC root: ${DXSHELL_GCROOT_DIR}/gcroot"
+
+# 3. Add to /etc/shells if not already present
+if ! grep -qxF "${DXSHELL_BIN}" /etc/shells 2>/dev/null; then
+  echo "Adding ${DXSHELL_BIN} to /etc/shells (requires sudo)..."
+  if echo "${DXSHELL_BIN}" | sudo tee -a /etc/shells >/dev/null 2>&1; then
+    echo "Added to /etc/shells"
+  else
+    echo "Could not add to /etc/shells automatically."
+    echo "Run manually: echo \"${DXSHELL_BIN}\" | sudo tee -a /etc/shells"
+  fi
 fi
 
-# Create HM config directory
-mkdir -p "${HM_CONFIG_DIR}"
-
-# Generate flake.nix
-cat >"${HM_CONFIG_DIR}/flake.nix" <<FLAKE_EOF
-{
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    home-manager = {
-      url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    dxshell = {
-      url = "${DXSHELL_FLAKE_URL}";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        home-manager.follows = "home-manager";
-      };
-    };
-  };
-
-  outputs = {nixpkgs, home-manager, dxshell, ...}: {
-    homeConfigurations."${DXSHELL_USER}" = home-manager.lib.homeManagerConfiguration {
-      pkgs = nixpkgs.legacyPackages.${SYSTEM};
-      modules = [
-        dxshell.hmModule
-        {
-          home = {
-            username = "${DXSHELL_USER}";
-            homeDirectory = "${DXSHELL_USER_HOME}";
-            stateVersion = "24.05";
-          };
-          nixpkgs.config.allowUnfreePredicate = pkg:
-            builtins.elem (nixpkgs.lib.getName pkg) dxshell.unfreePackages;
-          ${SESSION_VARS_BLOCK}
-        }
-      ];
-    };
-  };
-}
-FLAKE_EOF
-
-echo ""
-echo "Generated ${HM_CONFIG_DIR}/flake.nix"
-echo ""
-
-# Run home-manager switch
-echo "Running home-manager switch..."
-@HOME_MANAGER@/bin/home-manager switch --flake "${HM_CONFIG_DIR}"
+# 4. Change login shell
+echo "Changing login shell to ${DXSHELL_BIN}..."
+if command -v chsh >/dev/null 2>&1 && sudo chsh -s "${DXSHELL_BIN}" "${USER}" 2>/dev/null; then
+  echo "Login shell changed to dxshell"
+elif command -v usermod >/dev/null 2>&1 && sudo usermod -s "${DXSHELL_BIN}" "${USER}" 2>/dev/null; then
+  echo "Login shell changed to dxshell"
+else
+  echo "Could not change login shell automatically."
+  echo "Run manually: sudo usermod -s \"${DXSHELL_BIN}\" \"${USER}\""
+fi
 
 echo ""
 echo "dxshell installed successfully!"
-echo ""
-
-# Auto-change login shell
-ZSH_PATH="$(command -v zsh 2>/dev/null || echo "")"
-if [ -z "${ZSH_PATH}" ]; then
-  ZSH_PATH="${HOME}/.nix-profile/bin/zsh"
-fi
-
-if [ -x "${ZSH_PATH}" ]; then
-  # Add to /etc/shells if not already present
-  if ! grep -qxF "${ZSH_PATH}" /etc/shells 2>/dev/null; then
-    echo "Adding ${ZSH_PATH} to /etc/shells (requires sudo)..."
-    if echo "${ZSH_PATH}" | sudo tee -a /etc/shells >/dev/null 2>&1; then
-      echo "Added to /etc/shells"
-    else
-      echo "Could not add to /etc/shells automatically."
-      echo "Run manually: echo \"${ZSH_PATH}\" | sudo tee -a /etc/shells"
-    fi
-  fi
-
-  # Change login shell
-  echo "Changing login shell to ${ZSH_PATH}..."
-  if chsh -s "${ZSH_PATH}" 2>/dev/null; then
-    echo "Login shell changed to zsh"
-  else
-    echo "Could not change login shell automatically."
-    echo "Run manually: chsh -s \"${ZSH_PATH}\""
-  fi
-else
-  echo "To make zsh your login shell, run:"
-  echo "  sudo sh -c 'echo \"${ZSH_PATH}\" >> /etc/shells' && chsh -s \"${ZSH_PATH}\""
-fi
+echo "Log out and back in to use dxshell as your login shell."

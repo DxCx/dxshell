@@ -1,8 +1,11 @@
-{pkgs}: let
+{
+  pkgs,
+  dxshell_package,
+}: let
   script =
     builtins.replaceStrings
-    ["@HOME_MANAGER@"]
-    ["${pkgs.home-manager}"]
+    ["@DXSHELL_PACKAGE@"]
+    ["${dxshell_package}"]
     (builtins.readFile ../scripts/dxshell-install.sh);
 in
   pkgs.writeShellScriptBin "dxshell-install" script
