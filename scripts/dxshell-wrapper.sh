@@ -88,6 +88,16 @@ export XDG_CACHE_HOME="${DXSHELL_HOME}/.cache"
 # at DXSHELL_HOME by activation, and this is more reliable than depending
 # on HM's session vars resolving through the /tmp symlink chain.
 export PATH="${DXSHELL_HOME}/.nix-profile/bin${PATH:+:$PATH}"
+
+# When invoked with arguments (e.g., "dxshell -c 'command'"), forward them
+# to zsh.  This is required because $SHELL is set to the dxshell wrapper
+# when used as a login shell, and programs like SSH use "$SHELL -c ..."
+# to evaluate commands.  Without this, those invocations would spawn an
+# unwanted interactive shell instead of running the command.
+if [ $# -gt 0 ]; then
+  exec @ZSH@/bin/zsh "$@"
+fi
+
 # Reconnect stdin to the real terminal — when invoked via `curl | sh`,
 # stdin is the pipe (at EOF), which causes zsh to exit immediately.
 # When used as a login shell, stdin is already a tty.
