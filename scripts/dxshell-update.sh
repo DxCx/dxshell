@@ -2,13 +2,14 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: dxshell-update [--check] [--branch <name>] [DIR]"
+  echo "Usage: dxshell-update [--check] [--branch <name>] [--force-update] [DIR]"
   echo ""
   echo "Update dxshell to the latest version from git and rebuild."
   echo ""
   echo "Options:"
   echo "  --check          Show available updates without applying them"
   echo "  --branch <name>  Switch to a different branch before updating"
+  echo "  --force-update   Reset local branch to match remote (handles force-pushes)"
   echo "  DIR              Path to the dxshell git clone (default: auto-detect)"
   exit "${1:-0}"
 }
@@ -19,6 +20,7 @@ usage() {
 CHECK_ONLY=0
 DIR_OVERRIDE=""
 BRANCH_OVERRIDE=""
+FORCE_UPDATE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -31,6 +33,7 @@ while [ $# -gt 0 ]; do
         usage 1
       fi
       ;;
+    --force-update) FORCE_UPDATE=1 ;;
     --help | -h) usage 0 ;;
     -*)
       echo "error: unknown option '$1'" >&2
@@ -101,7 +104,7 @@ echo "dxshell-update: fetching origin/${BRANCH}..."
 LOCAL_HEAD=$("$GIT" -C "$DXSHELL_DIR" rev-parse HEAD)
 REMOTE_HEAD=$("$GIT" -C "$DXSHELL_DIR" rev-parse "origin/${BRANCH}")
 
-if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ] && [ "$FORCE_REBUILD" = "0" ]; then
+if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ] && [ "$FORCE_REBUILD" = "0" ] && [ "$FORCE_UPDATE" = "0" ]; then
   echo "dxshell is already up-to-date (${BRANCH} @ ${LOCAL_HEAD:0:8})."
   exit 0
 fi
@@ -118,14 +121,22 @@ if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
     exit 0
   fi
 
-  echo "dxshell-update: pulling ${NEW_COMMITS} new commit(s)..."
-  if ! "$GIT" -C "$DXSHELL_DIR" pull --ff-only; then
-    echo "" >&2
-    echo "error: fast-forward merge failed. Your local branch has diverged." >&2
-    echo "Resolve manually:" >&2
-    echo "  cd '${DXSHELL_DIR}' && git rebase origin/${BRANCH}" >&2
-    exit 1
+  if [ "$FORCE_UPDATE" = "1" ]; then
+    echo "dxshell-update: force-updating to origin/${BRANCH}..."
+    "$GIT" -C "$DXSHELL_DIR" reset --hard "origin/${BRANCH}"
+  else
+    echo "dxshell-update: pulling ${NEW_COMMITS} new commit(s)..."
+    if ! "$GIT" -C "$DXSHELL_DIR" pull --ff-only; then
+      echo "" >&2
+      echo "error: fast-forward merge failed. Your local branch has diverged." >&2
+      echo "Resolve manually, or use --force-update to reset to remote:" >&2
+      echo "  cd '${DXSHELL_DIR}' && git rebase origin/${BRANCH}" >&2
+      exit 1
+    fi
   fi
+elif [ "$FORCE_UPDATE" = "1" ]; then
+  echo "dxshell-update: force-updating to origin/${BRANCH}..."
+  "$GIT" -C "$DXSHELL_DIR" reset --hard "origin/${BRANCH}"
 elif [ "$CHECK_ONLY" = "1" ]; then
   echo "dxshell: branch ${BRANCH} switched (${LOCAL_HEAD:0:8}), rebuild required."
   exit 0
