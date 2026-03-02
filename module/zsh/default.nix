@@ -43,6 +43,13 @@ in {
           fi
         '';
 
+        initContent = ''
+          # Restore real HOME in standalone mode — system scripts may override it.
+          if [[ -n "''${DXSHELL_REAL_HOME}" ]]; then
+            export HOME="''${DXSHELL_REAL_HOME}"
+          fi
+        '';
+
         plugins = with pkgs;
           pluginsP10k
           ++ [

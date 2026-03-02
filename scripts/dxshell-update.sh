@@ -75,10 +75,18 @@ fi
 GIT="@GIT@/bin/git"
 
 # Switch branch if requested
+FORCE_REBUILD=0
+
 if [ -n "$BRANCH_OVERRIDE" ]; then
+  PREV_HEAD=$("$GIT" -C "$DXSHELL_DIR" rev-parse HEAD 2>/dev/null || echo "none")
   echo "dxshell-update: switching to branch ${BRANCH_OVERRIDE}..."
   "$GIT" -C "$DXSHELL_DIR" fetch origin "$BRANCH_OVERRIDE"
   "$GIT" -C "$DXSHELL_DIR" checkout "$BRANCH_OVERRIDE"
+  # Align local with remote — handles amended / force-pushed commits
+  "$GIT" -C "$DXSHELL_DIR" reset --hard "origin/$BRANCH_OVERRIDE"
+  if [ "$PREV_HEAD" != "$("$GIT" -C "$DXSHELL_DIR" rev-parse HEAD)" ]; then
+    FORCE_REBUILD=1
+  fi
 fi
 
 BRANCH=$("$GIT" -C "$DXSHELL_DIR" symbolic-ref --short HEAD 2>/dev/null) || {
@@ -93,29 +101,34 @@ echo "dxshell-update: fetching origin/${BRANCH}..."
 LOCAL_HEAD=$("$GIT" -C "$DXSHELL_DIR" rev-parse HEAD)
 REMOTE_HEAD=$("$GIT" -C "$DXSHELL_DIR" rev-parse "origin/${BRANCH}")
 
-if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ]; then
+if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ] && [ "$FORCE_REBUILD" = "0" ]; then
   echo "dxshell is already up-to-date (${BRANCH} @ ${LOCAL_HEAD:0:8})."
-  exit 0
-fi
-
-NEW_COMMITS=$("$GIT" -C "$DXSHELL_DIR" rev-list --count "HEAD..origin/${BRANCH}")
-
-if [ "$CHECK_ONLY" = "1" ]; then
-  echo "${NEW_COMMITS} new commit(s) available on ${BRANCH}."
-  "$GIT" -C "$DXSHELL_DIR" log --oneline "HEAD..origin/${BRANCH}"
   exit 0
 fi
 
 # ---------------------------------------------------------------------------
 # Pull changes
 # ---------------------------------------------------------------------------
-echo "dxshell-update: pulling ${NEW_COMMITS} new commit(s)..."
-if ! "$GIT" -C "$DXSHELL_DIR" pull --ff-only; then
-  echo "" >&2
-  echo "error: fast-forward merge failed. Your local branch has diverged." >&2
-  echo "Resolve manually:" >&2
-  echo "  cd '${DXSHELL_DIR}' && git rebase origin/${BRANCH}" >&2
-  exit 1
+if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
+  NEW_COMMITS=$("$GIT" -C "$DXSHELL_DIR" rev-list --count "HEAD..origin/${BRANCH}")
+
+  if [ "$CHECK_ONLY" = "1" ]; then
+    echo "${NEW_COMMITS} new commit(s) available on ${BRANCH}."
+    "$GIT" -C "$DXSHELL_DIR" log --oneline "HEAD..origin/${BRANCH}"
+    exit 0
+  fi
+
+  echo "dxshell-update: pulling ${NEW_COMMITS} new commit(s)..."
+  if ! "$GIT" -C "$DXSHELL_DIR" pull --ff-only; then
+    echo "" >&2
+    echo "error: fast-forward merge failed. Your local branch has diverged." >&2
+    echo "Resolve manually:" >&2
+    echo "  cd '${DXSHELL_DIR}' && git rebase origin/${BRANCH}" >&2
+    exit 1
+  fi
+elif [ "$CHECK_ONLY" = "1" ]; then
+  echo "dxshell: branch ${BRANCH} switched (${LOCAL_HEAD:0:8}), rebuild required."
+  exit 0
 fi
 
 # ---------------------------------------------------------------------------
