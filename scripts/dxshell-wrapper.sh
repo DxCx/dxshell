@@ -76,7 +76,14 @@ fi
 
 # Launch dxshell
 export DXSHELL_REAL_HOME="${REAL_HOME}"
-export HOME="${DXSHELL_HOME}"
+# Keep HOME pointing to the real home so ~ resolves correctly for the user.
+# Tools find their dxshell-managed configs via explicit XDG/ZDOTDIR variables.
+export HOME="${REAL_HOME}"
+export ZDOTDIR="${DXSHELL_HOME}"
+export XDG_CONFIG_HOME="${DXSHELL_HOME}/.config"
+export XDG_DATA_HOME="${DXSHELL_HOME}/.local/share"
+export XDG_STATE_HOME="${DXSHELL_HOME}/.local/state"
+export XDG_CACHE_HOME="${DXSHELL_HOME}/.cache"
 # Ensure HM-installed packages are on PATH — the profile is installed
 # at DXSHELL_HOME by activation, and this is more reliable than depending
 # on HM's session vars resolving through the /tmp symlink chain.
