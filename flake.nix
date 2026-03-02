@@ -57,6 +57,7 @@
               home = {
                 inherit username homeDirectory;
                 stateVersion = "24.05";
+                packages = [dxshell_update];
               };
               nixpkgs.config.allowUnfreePredicate = pkg:
                 builtins.elem (inputs.nixpkgs.lib.getName pkg) self.unfreePackages;
@@ -69,6 +70,7 @@
 
         dxshell_package = import ./packages/dxshell-wrapper.nix {inherit pkgs activationPackage homeDirectory;};
         dxshell_install = import ./packages/dxshell-install.nix {inherit pkgs dxshell_package;};
+        dxshell_update = import ./packages/dxshell-update.nix {inherit pkgs;};
 
         infraOutputs = dxnixinfra.lib.mkFlakeOutputs {
           src = self;
@@ -76,6 +78,7 @@
           extraChecks = {
             build-dxshell = dxshell_package;
             build-dxshell-install = dxshell_install;
+            build-dxshell-update = dxshell_update;
           };
         };
       in
@@ -83,6 +86,7 @@
           packages = {
             dxshell = dxshell_package;
             dxshell-install = dxshell_install;
+            dxshell-update = dxshell_update;
           };
           defaultPackage = dxshell_package;
         }
