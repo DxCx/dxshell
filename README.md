@@ -88,7 +88,7 @@ After either install, open a new shell or `source` the profile script as instruc
 
 ## Step 2: Quick Start (Standalone)
 
-No permanent changes to your system. Everything lives under `~/.dxshell-home`.
+No permanent changes to your system. Everything lives under `~/.dxshell-state`.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone
@@ -102,11 +102,16 @@ Subsequent runs:
 dxshell
 ```
 
-To update, pull the latest changes first:
+To update to the latest version:
 
 ```bash
-cd ~/.dxshell && git pull
-dxshell
+dxshell-update
+```
+
+Check for available updates without applying:
+
+```bash
+dxshell-update --check
 ```
 
 Clean reinstall (wipes all previous state and starts fresh):
@@ -118,36 +123,30 @@ curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | 
 Manual cleanup — remove everything:
 
 ```bash
-rm -rf ~/.dxshell ~/.dxshell-home ~/.cache/dxshell ~/.local/bin/dxshell
+rm -rf ~/.dxshell ~/.dxshell-state ~/.local/bin/dxshell
 ```
 
 ## Step 3: Permanent Install
 
-Install dxshell as your default shell environment via Home Manager. This integrates all tools directly into your user profile.
+Install dxshell as your default login shell. This creates a symlink at `~/.local/bin/dxshell` pointing to the Nix store binary and sets it as your login shell.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- install
 ```
 
-This clones the repo, generates `~/.config/home-manager/flake.nix`, runs `home-manager switch`, and sets zsh as your login shell.
+This clones the repo, builds the dxshell package, symlinks the binary, adds it to `/etc/shells`, and changes your login shell.
 
 ### Update
 
 ```bash
-cd ~/.config/home-manager && nix flake update && home-manager switch --flake .
-```
-
-If installed from a local clone (via `$DXSHELL_DIR`):
-
-```bash
-cd "$DXSHELL_DIR" && git pull && cd ~/.config/home-manager && home-manager switch --flake .
+dxshell-update
 ```
 
 ### Uninstall
 
 ```bash
-home-manager uninstall
-rm -rf ~/.config/home-manager ~/.dxshell
+sudo chsh -s /bin/bash "$USER"
+rm -rf ~/.dxshell ~/.dxshell-state ~/.local/bin/dxshell ~/.local/share/dxshell
 ```
 
 ## Advanced Usage
