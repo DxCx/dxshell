@@ -35,6 +35,14 @@ in {
         historySubstringSearch.enable = true;
         autosuggestion.enable = true;
 
+        profileExtra = ''
+          # Restore real HOME in standalone mode — system login scripts may override
+          # the HOME that the wrapper set before launching zsh.
+          if [[ -n "''${DXSHELL_REAL_HOME}" ]]; then
+            export HOME="''${DXSHELL_REAL_HOME}"
+          fi
+        '';
+
         plugins = with pkgs;
           pluginsP10k
           ++ [
