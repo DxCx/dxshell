@@ -79,6 +79,9 @@
             build-dxshell = dxshell_package;
             build-dxshell-install = dxshell_install;
             build-dxshell-update = dxshell_update;
+            test-scripts = import ./tests/test-scripts.nix {
+              inherit pkgs dxshell_package dxshell_install dxshell_update;
+            };
           };
         };
       in
