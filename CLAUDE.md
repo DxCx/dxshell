@@ -17,16 +17,18 @@ dxshell is a portable, reproducible development shell environment for Linux buil
 | Shellcheck | `find . -name '*.sh' -type f \| xargs nix run nixpkgs#shellcheck --` |
 | Run standalone | `nix run` |
 | Run installer | `nix run .#dxshell-install` |
+| Run updater | `nix run .#dxshell-update` |
 
-There are no unit tests. Validation is done via `nix flake check` which verifies the entire configuration builds.
+Validation is done via `nix flake check` which verifies the entire configuration builds and runs script build validation tests (`tests/test-scripts.nix`).
 
 ## Architecture
 
 ### Nix Flake Structure
 
 - **flake.nix** — Main entry point. Defines inputs (nixpkgs, home-manager, dxvim, dxnixinfra, utils) and outputs (packages, hmModule, checks).
-- **packages/** — Two Nix derivations: `dxshell-wrapper.nix` (standalone, default package) and `dxshell-install.nix` (permanent install).
-- **scripts/** — Shell scripts for standalone (`dxshell-wrapper.sh`) and install (`dxshell-install.sh`) modes. These use `@PLACEHOLDER@` substitution (e.g., `@ACTIVATION_PACKAGE@`, `@GIT@`, `@ZSH@`) replaced by Nix at build time.
+- **packages/** — Nix derivations: `dxshell-wrapper.nix` (standalone, default package), `dxshell-install.nix` (permanent install), and `dxshell-update.nix` (self-updater).
+- **scripts/** — Shell scripts for standalone (`dxshell-wrapper.sh`), install (`dxshell-install.sh`), and update (`dxshell-update.sh`) modes. These use `@PLACEHOLDER@` substitution (e.g., `@ACTIVATION_PACKAGE@`, `@GIT@`, `@ZSH@`) replaced by Nix at build time.
+- **tests/** — Build validation tests (`test-scripts.nix`) that verify built scripts have no leftover placeholders, valid shebangs, and correct nix store paths.
 - **module/** — Home Manager modules, one per feature.
 
 ### Home Manager Module System
@@ -42,7 +44,7 @@ The `module/extensions/default.nix` provides an extension point for custom modul
 
 ### Standalone Mode
 
-The standalone wrapper (`scripts/dxshell-wrapper.sh`) creates an isolated home at `~/.cache/dxshell/home`, runs Home Manager activation into it, symlinks `~/.ssh`, includes `~/.gitconfig`, and launches zsh with the isolated `HOME`.
+The standalone wrapper (`scripts/dxshell-wrapper.sh`) creates an isolated home at `~/.dxshell-state/home`, runs Home Manager activation into it, symlinks `~/.ssh`, includes `~/.gitconfig`, and launches zsh with the isolated `HOME`.
 
 ### Key Dependencies
 
