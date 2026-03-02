@@ -2,13 +2,14 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: dxshell-update [--check] [DIR]"
+  echo "Usage: dxshell-update [--check] [--branch <name>] [DIR]"
   echo ""
   echo "Update dxshell to the latest version from git and rebuild."
   echo ""
   echo "Options:"
-  echo "  --check   Show available updates without applying them"
-  echo "  DIR       Path to the dxshell git clone (default: auto-detect)"
+  echo "  --check          Show available updates without applying them"
+  echo "  --branch <name>  Switch to a different branch before updating"
+  echo "  DIR              Path to the dxshell git clone (default: auto-detect)"
   exit "${1:-0}"
 }
 
@@ -17,23 +18,33 @@ usage() {
 # ---------------------------------------------------------------------------
 CHECK_ONLY=0
 DIR_OVERRIDE=""
+BRANCH_OVERRIDE=""
 
-for arg in "$@"; do
-  case "$arg" in
+while [ $# -gt 0 ]; do
+  case "$1" in
     --check) CHECK_ONLY=1 ;;
+    --branch)
+      shift
+      BRANCH_OVERRIDE="${1:-}"
+      if [ -z "$BRANCH_OVERRIDE" ]; then
+        echo "error: --branch requires a value" >&2
+        usage 1
+      fi
+      ;;
     --help | -h) usage 0 ;;
     -*)
-      echo "error: unknown option '$arg'" >&2
+      echo "error: unknown option '$1'" >&2
       usage 1
       ;;
     *)
       if [ -n "$DIR_OVERRIDE" ]; then
-        echo "error: unexpected argument '$arg'" >&2
+        echo "error: unexpected argument '$1'" >&2
         usage 1
       fi
-      DIR_OVERRIDE="$arg"
+      DIR_OVERRIDE="$1"
       ;;
   esac
+  shift
 done
 
 # ---------------------------------------------------------------------------
@@ -62,6 +73,13 @@ fi
 # Fetch and compare
 # ---------------------------------------------------------------------------
 GIT="@GIT@/bin/git"
+
+# Switch branch if requested
+if [ -n "$BRANCH_OVERRIDE" ]; then
+  echo "dxshell-update: switching to branch ${BRANCH_OVERRIDE}..."
+  "$GIT" -C "$DXSHELL_DIR" fetch origin "$BRANCH_OVERRIDE"
+  "$GIT" -C "$DXSHELL_DIR" checkout "$BRANCH_OVERRIDE"
+fi
 
 BRANCH=$("$GIT" -C "$DXSHELL_DIR" symbolic-ref --short HEAD 2>/dev/null) || {
   echo "error: detached HEAD in ${DXSHELL_DIR}." >&2

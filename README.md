@@ -114,6 +114,14 @@ Check for available updates without applying:
 dxshell-update --check
 ```
 
+Switch to a different branch and update:
+
+```bash
+dxshell-update --branch <name>
+```
+
+Subsequent `dxshell-update` calls (without `--branch`) will continue tracking that branch.
+
 Clean reinstall (wipes all previous state and starts fresh):
 
 ```bash
