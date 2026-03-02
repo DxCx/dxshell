@@ -35,6 +35,14 @@ in {
         historySubstringSearch.enable = true;
         autosuggestion.enable = true;
 
+        envExtra = ''
+          # Source user's server-local .zshenv from real home in standalone mode.
+          # ZDOTDIR overrides .zshenv location, so we must source it explicitly.
+          if [[ -n "''${DXSHELL_REAL_HOME}" && -f "''${DXSHELL_REAL_HOME}/.zshenv" ]]; then
+            source "''${DXSHELL_REAL_HOME}/.zshenv"
+          fi
+        '';
+
         profileExtra = ''
           # Restore real HOME in standalone mode — system login scripts may override
           # the HOME that the wrapper set before launching zsh.
@@ -47,6 +55,17 @@ in {
           # Restore real HOME in standalone mode — system scripts may override it.
           if [[ -n "''${DXSHELL_REAL_HOME}" ]]; then
             export HOME="''${DXSHELL_REAL_HOME}"
+          fi
+
+          # Source user's server-local rc files from real home in standalone mode.
+          # ZDOTDIR overrides their location, so we must source them explicitly.
+          if [[ -n "''${DXSHELL_REAL_HOME}" ]]; then
+            for _dxshell_rc in "''${DXSHELL_REAL_HOME}/.zshrc" "''${DXSHELL_REAL_HOME}/.dxshellrc"; do
+              if [[ -f "''${_dxshell_rc}" ]]; then
+                source "''${_dxshell_rc}"
+              fi
+            done
+            unset _dxshell_rc
           fi
         '';
 
