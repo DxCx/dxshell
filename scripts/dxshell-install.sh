@@ -1,8 +1,10 @@
 # shellcheck shell=bash
 set -euo pipefail
 
-DXSHELL_BIN="${HOME}/.local/bin/dxshell"
-DXSHELL_GCROOT_DIR="${HOME}/.local/share/dxshell"
+_HOME="${DXSHELL_REAL_HOME:-$HOME}"
+
+DXSHELL_BIN="${_HOME}/.local/bin/dxshell"
+DXSHELL_GCROOT_DIR="${_HOME}/.local/share/dxshell"
 DXSHELL_STORE_PATH="@DXSHELL_PACKAGE@"
 
 echo "dxshell: installing standalone shell for ${USER}"

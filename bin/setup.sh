@@ -6,6 +6,8 @@
 #   GIT_BRANCH=fix-standalone curl ... | sh -s -- standalone  # use a specific branch
 set -eu
 
+_HOME="${DXSHELL_REAL_HOME:-$HOME}"
+
 REPO_URL="https://github.com/DxCx/dxshell.git"
 GIT_BRANCH="${GIT_BRANCH:-master}"
 
@@ -45,7 +47,7 @@ esac
 
 # Directory: env > default (positional may have been set above)
 if [ -z "${DXSHELL_DIR:-}" ]; then
-  DXSHELL_DIR="$HOME/.dxshell"
+  DXSHELL_DIR="$_HOME/.dxshell"
 fi
 
 # Ensure absolute path
@@ -64,9 +66,9 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$CLEAN" = "1" ]; then
   echo "Cleaning previous dxshell state..."
-  rm -rf "$HOME/.dxshell-state" /tmp/dxshell-home
+  rm -rf "$_HOME/.dxshell-state" /tmp/dxshell-home
   rm -rf "$DXSHELL_DIR"
-  rm -f "$HOME/.local/bin/dxshell"
+  rm -f "$_HOME/.local/bin/dxshell"
   echo "Done."
 fi
 
@@ -79,7 +81,7 @@ ensure_nix() {
   fi
 
   # Try sourcing common profile scripts
-  for f in "$HOME/.nix-profile/etc/profile.d/nix.sh" \
+  for f in "$_HOME/.nix-profile/etc/profile.d/nix.sh" \
     "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"; do
     if [ -f "$f" ]; then
       # shellcheck disable=SC1090
@@ -181,19 +183,19 @@ export DXSHELL_DIR
 case "$MODE" in
   standalone)
     # Create a launcher script
-    mkdir -p "$HOME/.local/bin"
+    mkdir -p "$_HOME/.local/bin"
     {
       echo '#!/bin/sh'
       echo "export DXSHELL_FLAKE='$DXSHELL_DIR'"
       echo "exec nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config 'path:$DXSHELL_DIR'"
-    } >"$HOME/.local/bin/dxshell"
-    chmod +x "$HOME/.local/bin/dxshell"
+    } >"$_HOME/.local/bin/dxshell"
+    chmod +x "$_HOME/.local/bin/dxshell"
     echo ""
     echo "Launcher created at ~/.local/bin/dxshell"
 
     # Warn if ~/.local/bin is not in PATH
     case ":$PATH:" in
-      *":$HOME/.local/bin:"*) ;;
+      *":$_HOME/.local/bin:"*) ;;
       *)
         echo "WARNING: ~/.local/bin is not in your PATH."
         echo "Add it with: export PATH=\"\$HOME/.local/bin:\$PATH\""
