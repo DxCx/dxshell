@@ -31,15 +31,20 @@ if ! grep -qxF "${DXSHELL_BIN}" /etc/shells 2>/dev/null; then
   fi
 fi
 
-# 4. Change login shell
-echo "Changing login shell to ${DXSHELL_BIN}..."
-if command -v chsh >/dev/null 2>&1 && sudo chsh -s "${DXSHELL_BIN}" "${USER}" 2>/dev/null; then
-  echo "Login shell changed to dxshell"
-elif command -v usermod >/dev/null 2>&1 && sudo usermod -s "${DXSHELL_BIN}" "${USER}" 2>/dev/null; then
-  echo "Login shell changed to dxshell"
+# 4. Change login shell (skip if already set)
+CURRENT_SHELL=$(getent passwd "${USER}" | cut -d: -f7)
+if [ "${CURRENT_SHELL}" = "${DXSHELL_BIN}" ]; then
+  echo "Login shell already set to dxshell"
 else
-  echo "Could not change login shell automatically."
-  echo "Run manually: sudo usermod -s \"${DXSHELL_BIN}\" \"${USER}\""
+  echo "Changing login shell to ${DXSHELL_BIN}..."
+  if command -v chsh >/dev/null 2>&1 && sudo chsh -s "${DXSHELL_BIN}" "${USER}" 2>/dev/null; then
+    echo "Login shell changed to dxshell"
+  elif command -v usermod >/dev/null 2>&1 && sudo usermod -s "${DXSHELL_BIN}" "${USER}" 2>/dev/null; then
+    echo "Login shell changed to dxshell"
+  else
+    echo "Could not change login shell automatically."
+    echo "Run manually: sudo usermod -s \"${DXSHELL_BIN}\" \"${USER}\""
+  fi
 fi
 
 echo ""
