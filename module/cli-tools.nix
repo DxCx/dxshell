@@ -34,6 +34,9 @@ in {
         git = true;
       };
 
+      # GitHub CLI
+      gh.enable = true;
+
       # top replacement (bottom)
       bottom = {
         enable = true;
