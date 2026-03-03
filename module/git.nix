@@ -16,7 +16,7 @@ in {
         column.ui = "auto";
         branch = {
           autosetuprebase = "always";
-          sort = "--committerdate";
+          sort = "-committerdate";
         };
         core = {
           fsmonitor = true;
