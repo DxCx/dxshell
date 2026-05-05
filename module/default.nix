@@ -71,10 +71,49 @@
       };
     };
 
-    claudeCode.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Enable Claude Code (Anthropic CLI).";
+    claudeCode = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable Claude Code (Anthropic CLI).";
+      };
+      manageSettings = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Deploy an opinionated ~/.claude/settings.json. Disable to keep your
+          existing file untouched (Home Manager will not overwrite a
+          pre-existing non-symlink at that path either way).
+        '';
+      };
+      notifyOnStop = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Send a desktop notification (libnotify) when Claude finishes a turn.";
+      };
+      extraAllow = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [];
+        description = ''
+          Additional permissions.allow entries appended to the defaults.
+          Use this (rather than extraSettings.permissions.allow) to keep the
+          baseline allowlist intact — extraSettings replaces lists wholesale.
+        '';
+      };
+      extraDeny = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [];
+        description = "Additional permissions.deny entries appended to the defaults.";
+      };
+      extraSettings = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
+        default = {};
+        description = ''
+          Attrset merged on top of the base settings via lib.recursiveUpdate.
+          Note: list values (e.g., permissions.allow) are *replaced* wholesale,
+          not concatenated. Use extraAllow / extraDeny for additive permissions.
+        '';
+      };
     };
   };
 
@@ -84,7 +123,7 @@
     ./core.nix
     ./cli-tools.nix
     ./lsp.nix
-    ./claude-code.nix
+    ./claude-code
     ./zsh
     ./tmux
     ./extensions
