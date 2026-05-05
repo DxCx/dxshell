@@ -55,6 +55,45 @@ Plugins: session save/restore (resurrect + continuum), regex search (copycat), c
 
 Preconfigured: branches sorted by commit date, relative dates in log, `updateRefs` on rebase, and a `git l` alias for a compact colored graph log.
 
+### Language Servers
+
+Installed in PATH so both Neovim and Claude Code can invoke them. Each bundle is independently toggleable.
+
+| Bundle | Option | Packages |
+|--------|--------|----------|
+| Systems | `dxshell.lsp.systems.enable` | `clang-tools` (clangd, clang-format, clang-tidy), `rust-analyzer` |
+| Scripting | `dxshell.lsp.scripting.enable` | `pyright`, `ruff`, `bash-language-server`, `lua-language-server` |
+| Web | `dxshell.lsp.web.enable` | `typescript-language-server`, `nodejs` |
+| Nix | `dxshell.lsp.nix.enable` | `nil` |
+| Config | `dxshell.lsp.config.enable` | `yaml-language-server`, `taplo` (TOML), `marksman` (Markdown) |
+
+All default to enabled. Set `dxshell.lsp.enable = false` to drop the whole group.
+
+### Claude Code
+
+| Tool | Description |
+|------|-------------|
+| claude-code | Anthropic CLI (unfree, gated by `dxshell.allowUnfree`) |
+
+dxshell deploys an opinionated `~/.claude/settings.json`:
+
+- **Status line** showing model · cwd basename · git branch.
+- **Permission allowlist** for read-only Bash commands (`ls`, `cat`, `git status`, `nix flake show`, …) so Claude doesn't ask permission for safe inspection.
+- **Stop hook** that fires `notify-send` when Claude finishes a turn.
+
+Options:
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `dxshell.claudeCode.enable` | `true` | Install the package and (optionally) settings. |
+| `dxshell.claudeCode.manageSettings` | `true` | Deploy the opinionated `settings.json`. Disable to keep your own. |
+| `dxshell.claudeCode.notifyOnStop` | `true` | Desktop notification on Stop. No-ops on headless / SSH sessions (DBus-guarded). |
+| `dxshell.claudeCode.extraAllow` | `[]` | Permission entries appended to `permissions.allow`. Use this for additive overrides — list values in `extraSettings` are *replaced wholesale*. |
+| `dxshell.claudeCode.extraDeny` | `[]` | Permission entries appended to `permissions.deny`. |
+| `dxshell.claudeCode.extraSettings` | `{}` | Free-form overrides, recursively merged on top of the defaults via `lib.recursiveUpdate`. Note: list values are replaced, not concatenated — that's why `extraAllow` / `extraDeny` exist. |
+
+**Migrating an existing `~/.claude/settings.json`:** On first launch the dxshell wrapper auto-renames any pre-existing `~/.claude/settings.json` (real `$HOME`, not the standalone state dir) to `~/.claude/settings.json.dxshell-backup-<timestamp>` so Home Manager activation succeeds. Migrate any fields you want to keep into `dxshell.claudeCode.extraSettings` (or `extraAllow`/`extraDeny` for permission lists). To opt out entirely, set `dxshell.claudeCode.manageSettings = false`.
+
 ## Prerequisites
 
 Your terminal emulator must use a [Nerd Font](https://www.nerdfonts.com/) for icons and the powerlevel10k prompt to render correctly. Recommended: **MesloLGS NF**.
