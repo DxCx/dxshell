@@ -49,22 +49,38 @@
         # HM activation creates symlinks relative to the real $HOME.
         username = "dxshell";
         homeDirectory = "/tmp/dxshell-home";
-        hmConfig = inputs.home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
 
-          modules = [
-            (_: {
-              home = {
-                inherit username homeDirectory;
-                stateVersion = "24.05";
-                packages = [dxshell_update];
-              };
-              nixpkgs.config.allowUnfreePredicate = pkg:
-                builtins.elem (inputs.nixpkgs.lib.getName pkg) self.unfreePackages;
-            })
-            hmModule
-          ];
-        };
+        mkHmConfig = extraModule:
+          inputs.home-manager.lib.homeManagerConfiguration {
+            inherit pkgs;
+            modules = [
+              (_: {
+                home = {
+                  inherit username homeDirectory;
+                  stateVersion = "24.05";
+                  packages = [dxshell_update];
+                };
+                nixpkgs.config.allowUnfreePredicate = pkg:
+                  builtins.elem (inputs.nixpkgs.lib.getName pkg) self.unfreePackages;
+              })
+              hmModule
+              extraModule
+            ];
+          };
+
+        hmConfig = mkHmConfig (_: {});
+        # Test fixture: notifyOnStop=false, extraSettings/Allow exercised, manageSettings still on.
+        hmConfigAlt = mkHmConfig (_: {
+          dxshell.claudeCode = {
+            notifyOnStop = false;
+            extraSettings = {env = {FOO = "bar";};};
+            extraAllow = ["Bash(npm:*)"];
+          };
+        });
+        # Test fixture: manageSettings off — settings.json should not be deployed.
+        hmConfigNoSettings = mkHmConfig (_: {
+          dxshell.claudeCode.manageSettings = false;
+        });
 
         inherit (hmConfig) activationPackage;
 
@@ -81,6 +97,9 @@
             build-dxshell-update = dxshell_update;
             test-scripts = import ./tests/test-scripts.nix {
               inherit pkgs dxshell_package dxshell_install dxshell_update;
+              inherit (hmConfig) activationPackage;
+              activationPackageAlt = hmConfigAlt.activationPackage;
+              activationPackageNoSettings = hmConfigNoSettings.activationPackage;
             };
           };
         };
