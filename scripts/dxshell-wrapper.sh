@@ -32,6 +32,17 @@ if ! command -v nix-env >/dev/null 2>&1; then
   unset _nix_profile_script
 fi
 
+# Back up any pre-existing ~/.claude/settings.json so HM activation does not
+# abort with "Existing file is in the way". Symlinks (already-managed by a
+# previous activation) and missing files are left alone.
+CLAUDE_SETTINGS="${REAL_HOME}/.claude/settings.json"
+if [ -e "${CLAUDE_SETTINGS}" ] && [ ! -L "${CLAUDE_SETTINGS}" ]; then
+  CLAUDE_BACKUP="${CLAUDE_SETTINGS}.dxshell-backup-$(@COREUTILS@/bin/date +%Y%m%d-%H%M%S)"
+  @COREUTILS@/bin/mv "${CLAUDE_SETTINGS}" "${CLAUDE_BACKUP}"
+  echo "dxshell: backed up existing ${CLAUDE_SETTINGS} to ${CLAUDE_BACKUP}" >&2
+  echo "dxshell: migrate any custom fields into 'dxshell.claudeCode.extraSettings'" >&2
+fi
+
 # Check if we need to (re-)activate
 NEEDS_ACTIVATE=0
 if [ ! -f "${ACTIVATION_STAMP}" ]; then
