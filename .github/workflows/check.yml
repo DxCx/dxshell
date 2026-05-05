@@ -61,3 +61,9 @@ jobs:
 
       - name: Check
         run: nix flake check --show-trace
+
+      - name: Aarch64 evaluation
+        run: |
+          nix eval .#packages.aarch64-linux.dxshell.drvPath --raw
+          nix eval .#packages.aarch64-linux.dxshell-install.drvPath --raw
+          nix eval .#packages.aarch64-linux.dxshell-update.drvPath --raw
