@@ -38,6 +38,39 @@
       description = "Allow installation of unfree packages (e.g., claude-code).";
     };
 
+    lsp = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable language servers (gates the per-bundle toggles below).";
+      };
+      systems.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Systems LSPs: clang-tools (clangd), rust-analyzer.";
+      };
+      scripting.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Scripting LSPs: pyright, ruff, bash-language-server, lua-language-server.";
+      };
+      web.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Web LSPs: typescript-language-server (and nodejs as runtime).";
+      };
+      nix.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Nix LSP: nil.";
+      };
+      formats.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Config/markup-format LSPs: yaml-language-server, taplo (TOML), marksman (Markdown).";
+      };
+    };
+
     claudeCode.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -50,6 +83,7 @@
     ./git.nix
     ./core.nix
     ./cli-tools.nix
+    ./lsp.nix
     ./claude-code.nix
     ./zsh
     ./tmux
