@@ -109,6 +109,10 @@
               inherit (hmConfig) activationPackage;
               activationPackageAlt = hmConfigAlt.activationPackage;
             };
+            lsp-smoke = import ./tests/lsp-smoke.nix {
+              inherit pkgs;
+              inherit (hmConfig) activationPackage;
+            };
           };
         };
       in
