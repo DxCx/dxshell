@@ -18,6 +18,7 @@ dxshell is a portable, reproducible development shell environment for Linux buil
 | Run standalone | `nix run` |
 | Run installer | `nix run .#dxshell-install` |
 | Run updater | `nix run .#dxshell-update` |
+| Bootstrap (curl-pipeable, installs Nix if missing) | `bin/bootstrap.sh --user \| --system [standalone\|install] [--clean]` |
 
 Validation is done via `nix flake check` which verifies the entire configuration builds and runs script build validation tests (`tests/test-scripts.nix`).
 

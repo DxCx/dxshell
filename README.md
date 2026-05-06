@@ -2,9 +2,33 @@
 
 A portable, reproducible dev shell that gives you a consistent terminal environment on any Linux machine. One command, zero config.
 
+## Quick Start
+
+A single curl-pipeable command that installs Nix (if missing) and drops you into a fully configured dxshell session. If Nix is already on PATH, the install step is skipped — re-runs are idempotent.
+
+### Local user — no sudo
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --user
 ```
+
+Installs Nix in single-user mode under `~/nix`. Nothing system-wide is touched.
+
+### Server — with sudo
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --system
+```
+
+Installs Nix in multi-user mode (daemon at `/nix`, shared by all users). Prompts for sudo once during the Nix install.
+
+For permanent install (sets dxshell as your login shell), append `install`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --system install
+```
+
+If you'd rather install Nix yourself or wire things up by hand, see [Manual setup](#manual-setup) below.
 
 ## What's Included
 
@@ -98,11 +122,15 @@ Options:
 
 Your terminal emulator must use a [Nerd Font](https://www.nerdfonts.com/) for icons and the powerlevel10k prompt to render correctly. Recommended: **MesloLGS NF**.
 
-## Step 1: Install Nix
+## Manual setup
 
-If you don't have Nix yet, pick one of the two options below.
+If the [Quick Start](#quick-start) one-liner is too magical for your taste, the same flow split into discrete steps:
 
-### Option A: Multi-user install (recommended if you have sudo)
+### 1. Install Nix
+
+Pick one of the two options below.
+
+#### Multi-user (recommended if you have sudo)
 
 ```bash
 sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
@@ -113,7 +141,7 @@ sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
 - Shared `/nix` store between all users
 - Requires sudo
 
-### Option B: Single-user install (no sudo needed after /nix creation)
+#### Single-user (no sudo needed after /nix creation)
 
 ```bash
 sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --no-daemon
@@ -125,7 +153,7 @@ sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --no-daem
 
 After either install, open a new shell or `source` the profile script as instructed by the installer.
 
-## Step 2: Quick Start (Standalone)
+### 2. Run dxshell standalone
 
 No permanent changes to your system. Everything lives under `~/.dxshell-state`.
 
@@ -173,9 +201,9 @@ Manual cleanup — remove everything:
 rm -rf ~/.dxshell ~/.dxshell-state ~/.local/bin/dxshell
 ```
 
-## Step 3: Permanent Install
+### 3. Permanent install (optional)
 
-Install dxshell as your default login shell. This creates a symlink at `~/.local/bin/dxshell` pointing to the Nix store binary and sets it as your login shell.
+Set dxshell as your default login shell. This creates a symlink at `~/.local/bin/dxshell` pointing to the Nix store binary and sets it as your login shell.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- install
