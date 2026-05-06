@@ -88,6 +88,8 @@
         dxshell_install = import ./packages/dxshell-install.nix {inherit pkgs dxshell_package;};
         dxshell_update = import ./packages/dxshell-update.nix {inherit pkgs;};
 
+        claudeCodeSchema = import ./tests/claude-code-schema.nix {inherit pkgs;};
+
         infraOutputs = dxnixinfra.lib.mkFlakeOutputs {
           src = self;
           inherit pkgs;
@@ -100,6 +102,12 @@
               inherit (hmConfig) activationPackage;
               activationPackageAlt = hmConfigAlt.activationPackage;
               activationPackageNoSettings = hmConfigNoSettings.activationPackage;
+            };
+            validate-claude-settings = import ./tests/validate-claude-settings.nix {
+              inherit pkgs;
+              schema = claudeCodeSchema;
+              inherit (hmConfig) activationPackage;
+              activationPackageAlt = hmConfigAlt.activationPackage;
             };
           };
         };
