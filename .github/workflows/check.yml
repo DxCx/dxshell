@@ -62,6 +62,11 @@ jobs:
       - name: Check
         run: nix flake check --show-trace
 
+      - name: Wrapper smoke (real activation)
+        run: |
+          nix build --show-trace
+          ./tests/wrapper-smoke.sh ./result/bin/dxshell
+
       - name: Aarch64 evaluation
         run: |
           nix eval .#packages.aarch64-linux.dxshell.drvPath --raw
