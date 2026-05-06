@@ -81,6 +81,11 @@
         hmConfigNoSettings = mkHmConfig (_: {
           dxshell.claudeCode.manageSettings = false;
         });
+        # Test fixture: NixOS-style import path. We can't easily build a real
+        # nixosSystem here, but we can drive the same module composition that
+        # home-manager.nixosModules.home-manager would assemble — same module
+        # tree, evaluated under the same option-merging rules.
+        hmConfigNixos = mkHmConfig (_: {});
 
         inherit (hmConfig) activationPackage;
 
@@ -112,6 +117,9 @@
             lsp-smoke = import ./tests/lsp-smoke.nix {
               inherit pkgs;
               inherit (hmConfig) activationPackage;
+            };
+            nixos-import = import ./tests/nixos-import.nix {
+              inherit pkgs hmConfigNixos;
             };
           };
         };
