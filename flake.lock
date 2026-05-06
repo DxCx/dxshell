@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1778031190,
-        "narHash": "sha256-zMmXg48JguDDNFR2kkr1cLO5emguF4X4IISRjDCzWm4=",
+        "lastModified": 1778053853,
+        "narHash": "sha256-6e3bViJx5hJuhe/bSE+R8xm0FJnxMaZ4b6VNCp8t6/U=",
         "owner": "DxCx",
         "repo": "dxnixinfra",
-        "rev": "3ef1a971df527032a3177b85dc5fb78a57ecb494",
+        "rev": "1f565fab5f165f12411d3596e4ccb1e7ef065904",
         "type": "github"
       },
       "original": {
@@ -21,14 +21,8 @@
     },
     "dxnixinfra_2": {
       "inputs": {
-        "flake-utils": [
-          "dxvim",
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "dxvim",
-          "nixpkgs"
-        ]
+        "flake-utils": "flake-utils_2",
+        "nixpkgs": "nixpkgs_2"
       },
       "locked": {
         "lastModified": 1778031190,
@@ -47,7 +41,11 @@
     "dxvim": {
       "inputs": {
         "dxnixinfra": "dxnixinfra_2",
-        "flake-utils": "flake-utils_2",
+        "flake-utils": [
+          "dxvim",
+          "dxnixinfra",
+          "flake-utils"
+        ],
         "hop-nvim-patched": "hop-nvim-patched",
         "nixpkgs": [
           "nixpkgs"
@@ -56,11 +54,11 @@
         "sidekick-nvim": "sidekick-nvim"
       },
       "locked": {
-        "lastModified": 1778042747,
-        "narHash": "sha256-xCb7v31iuFWdBOup0AoilDw/0/vuzubZfmQYFUA3twI=",
+        "lastModified": 1778055212,
+        "narHash": "sha256-PfhWl0FR8bHvcOk/wor7Fp3sdy9Urc07cx43c478SnY=",
         "owner": "DxCx",
         "repo": "dxvim",
-        "rev": "848f92b1f718b1f7cadb65d71baee1402abed2dc",
+        "rev": "85f5f929fac2a22a91f93e91c02966a3a4770e5a",
         "type": "github"
       },
       "original": {
@@ -253,16 +251,16 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1777954456,
-        "narHash": "sha256-hGdgeU2Nk87RAuZyYjyDjFL6LK7dAZN5RE9+hrDTkDU=",
+        "lastModified": 1777946660,
+        "narHash": "sha256-iw3XDIG6xxk+AZTcawCLHf6i9i4tXRzLZEoV9xhRToQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "549bd84d6279f9852cae6225e372cc67fb91a4c1",
+        "rev": "bc57abace07689cfd34203aa5fb4027514895987",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
-        "ref": "nixos-unstable",
+        "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -298,7 +296,10 @@
         "dxnixinfra": "dxnixinfra",
         "dxvim": "dxvim",
         "home-manager": "home-manager",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": [
+          "dxnixinfra",
+          "nixpkgs"
+        ],
         "utils": "utils"
       }
     },
