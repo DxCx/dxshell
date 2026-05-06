@@ -73,32 +73,53 @@ if [ "$CLEAN" = "1" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Check Nix is installed
+# 2. Resolve the Nix runtime
 # ---------------------------------------------------------------------------
+# NIX_CMD holds the command we'll use everywhere below in place of bare `nix`.
+# It's either:
+#   "nix"                                    — a real Nix install
+#   "/abs/path/to/nix-portable nix"          — nix-portable shim
+# Word splitting happens at the call site; the variable is intentionally
+# unquoted when used as a command head.
+NIX_CMD=""
+
 ensure_nix() {
   if command -v nix >/dev/null 2>&1; then
+    NIX_CMD="nix"
     return 0
   fi
 
-  # Try sourcing common profile scripts
+  # Try sourcing common profile scripts (real Nix install)
   for f in "$_HOME/.nix-profile/etc/profile.d/nix.sh" \
     "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"; do
     if [ -f "$f" ]; then
       # shellcheck disable=SC1090
       . "$f"
       if command -v nix >/dev/null 2>&1; then
+        NIX_CMD="nix"
         return 0
       fi
     fi
   done
 
+  # Fall back to nix-portable (installed by `bootstrap.sh --user`).
+  if command -v nix-portable >/dev/null 2>&1; then
+    NIX_CMD="$(command -v nix-portable) nix"
+    return 0
+  fi
+  if [ -x "$_HOME/.local/bin/nix-portable" ]; then
+    NIX_CMD="$_HOME/.local/bin/nix-portable nix"
+    return 0
+  fi
+
   echo "error: Nix is not installed." >&2
   echo "" >&2
-  echo "Install Nix (multi-user, recommended):" >&2
-  echo "  sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon" >&2
+  echo "Easiest: use the bootstrap one-liner, which installs Nix for you." >&2
+  echo "  curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --user" >&2
   echo "" >&2
-  echo "Or single-user (no daemon):" >&2
-  echo "  sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --no-daemon" >&2
+  echo "Or install Nix manually:" >&2
+  echo "  Multi-user: sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon" >&2
+  echo "  Single-user nix-portable: see https://github.com/DavHau/nix-portable" >&2
   exit 1
 }
 
@@ -156,7 +177,8 @@ run_git() {
   if command -v git >/dev/null 2>&1; then
     git "$@"
   else
-    nix run --accept-flake-config nixpkgs#git -- "$@"
+    # shellcheck disable=SC2086
+    $NIX_CMD run --accept-flake-config nixpkgs#git -- "$@"
   fi
 }
 
@@ -182,12 +204,15 @@ export DXSHELL_DIR
 # ---------------------------------------------------------------------------
 case "$MODE" in
   standalone)
-    # Create a launcher script
+    # Create a launcher script. We bake the resolved NIX_CMD into the launcher
+    # so subsequent `dxshell` invocations don't depend on PATH ordering — this
+    # matters especially for the nix-portable case where the binary is in
+    # ~/.local/bin and may not be on every shell's PATH.
     mkdir -p "$_HOME/.local/bin"
     {
       echo '#!/bin/sh'
       echo "export DXSHELL_FLAKE='$DXSHELL_DIR'"
-      echo "exec nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config 'path:$DXSHELL_DIR'"
+      echo "exec $NIX_CMD --extra-experimental-features 'nix-command flakes' run --accept-flake-config 'path:$DXSHELL_DIR'"
     } >"$_HOME/.local/bin/dxshell"
     chmod +x "$_HOME/.local/bin/dxshell"
     echo ""
@@ -205,12 +230,14 @@ case "$MODE" in
     echo ""
     echo "Starting dxshell..."
     export DXSHELL_FLAKE="$DXSHELL_DIR"
-    exec nix run --accept-flake-config "path:$DXSHELL_DIR"
+    # shellcheck disable=SC2086
+    exec $NIX_CMD run --accept-flake-config "path:$DXSHELL_DIR"
     ;;
 
   install)
     echo ""
     echo "Running permanent install..."
-    nix run --accept-flake-config "path:$DXSHELL_DIR#dxshell-install"
+    # shellcheck disable=SC2086
+    $NIX_CMD run --accept-flake-config "path:$DXSHELL_DIR#dxshell-install"
     ;;
 esac
