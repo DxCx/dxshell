@@ -12,7 +12,7 @@ A single curl-pipeable command that installs Nix (if missing) and drops you into
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --user
 ```
 
-Installs Nix in single-user mode under `~/nix`. Nothing system-wide is touched.
+Installs [`nix-portable`](https://github.com/DavHau/nix-portable) into `~/.local/bin` and stores all Nix state in `~/.nix-portable/`. **Nothing outside your `$HOME` is touched** — no sudo, no `/nix`. Works on shared `$HOME` mounts (e.g., NFS) across multiple servers, as long as they share the same CPU architecture.
 
 ### Server — with sudo
 
@@ -126,11 +126,11 @@ Your terminal emulator must use a [Nerd Font](https://www.nerdfonts.com/) for ic
 
 If the [Quick Start](#quick-start) one-liner is too magical for your taste, the same flow split into discrete steps:
 
-### 1. Install Nix
+### 1. Install a Nix runtime
 
-Pick one of the two options below.
+Pick one of the three options below.
 
-#### Multi-user (recommended if you have sudo)
+#### Multi-user upstream Nix (with sudo)
 
 ```bash
 sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
@@ -140,18 +140,34 @@ sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
 - Better build isolation and security
 - Shared `/nix` store between all users
 - Requires sudo
+- *Equivalent to `bootstrap.sh --system`.*
 
-#### Single-user (no sudo needed after /nix creation)
+#### nix-portable (no sudo, everything in HOME)
+
+Download the latest binary from the [DavHau/nix-portable releases page](https://github.com/DavHau/nix-portable/releases) and drop it on your PATH (typically `~/.local/bin`):
+
+```bash
+curl -fsSL -o ~/.local/bin/nix-portable \
+  https://github.com/DavHau/nix-portable/releases/latest/download/nix-portable-$(uname -m)
+chmod +x ~/.local/bin/nix-portable
+```
+
+- All Nix state lives in `~/.nix-portable/`
+- No `/nix`, no sudo, no system modifications
+- Ideal for shared `$HOME` across servers of the same architecture
+- *Equivalent to `bootstrap.sh --user`.*
+
+#### Single-user upstream Nix (one-time sudo to create /nix)
 
 ```bash
 sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --no-daemon
 ```
 
 - Installs to your user only, no daemon
-- Good for personal machines or environments without systemd
 - Needs sudo only once (to create `/nix`); after that, runs unprivileged
+- Note: this is *not* what `bootstrap.sh --user` uses — it still touches `/nix`. Pick this one only if you specifically want the official single-user install.
 
-After either install, open a new shell or `source` the profile script as instructed by the installer.
+After installing, open a new shell or `source` the profile script as instructed by the installer.
 
 ### 2. Run dxshell standalone
 
