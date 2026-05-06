@@ -11,7 +11,8 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    dxnixinfra.url = "github:DxCx/dxnixinfra";
+    nixpkgs.follows = "dxnixinfra/nixpkgs";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,7 +22,6 @@
       url = "github:DxCx/dxvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    dxnixinfra.url = "github:DxCx/dxnixinfra";
     utils.url = "github:gytis-ivaskevicius/flake-utils-plus";
   };
 
