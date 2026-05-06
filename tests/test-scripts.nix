@@ -8,7 +8,7 @@
   activationPackageNoSettings,
 }:
 pkgs.runCommand "test-scripts" {
-  nativeBuildInputs = [pkgs.gnugrep pkgs.coreutils pkgs.jq];
+  nativeBuildInputs = [pkgs.gnugrep pkgs.coreutils pkgs.jq pkgs.bash pkgs.git];
 } ''
   set -euo pipefail
   errors=0
@@ -117,6 +117,38 @@ pkgs.runCommand "test-scripts" {
     sh -c "printf 'not json at all' | '$statusline' >/dev/null"
   check "statusline produces output for malformed stdin" \
     sh -c "printf 'not json at all' | '$statusline' | grep -q ."
+
+  echo ""
+  echo "=== Statusline inside a real git repo ==="
+  repo="$TMPDIR/sample-repo"
+  mkdir -p "$repo"
+  ( cd "$repo" \
+    && git -c init.defaultBranch=trunk init -q \
+    && git -c user.email=t@t -c user.name=t commit --allow-empty -q -m init )
+  statusline_input='{"model":{"display_name":"Claude Test"},"cwd":"'"$repo"'"}'
+  statusline_output=$(echo "$statusline_input" | "$statusline" || true)
+  echo "statusline output: $statusline_output"
+  check "statusline emits model name" \
+    sh -c "echo '$statusline_output' | grep -q 'Claude Test'"
+  check "statusline emits git branch suffix" \
+    sh -c "echo '$statusline_output' | grep -q 'trunk'"
+
+  echo ""
+  echo "=== Stop hook command (DBus-guard correctness) ==="
+  hook_cmd="$(jq -r '.hooks.Stop[0].hooks[0].command' "$claude_settings")"
+  check "Stop hook command parses as bash" \
+    bash -n -c "$hook_cmd"
+  # DBus-absent path: the guard should make it a silent no-op (exit 0).
+  check "Stop hook is a no-op when DBUS_SESSION_BUS_ADDRESS is unset" \
+    env -u DBUS_SESSION_BUS_ADDRESS bash -c "$hook_cmd"
+  # Verify the libnotify path embedded in the command exists.
+  notify_path="$(printf '%s' "$hook_cmd" | grep -oE '/nix/store/[a-z0-9]{32}-libnotify-[^/]+/bin/notify-send' | head -1)"
+  if [ -n "$notify_path" ]; then
+    check "libnotify binary referenced by Stop hook exists" test -x "$notify_path"
+  else
+    echo "FAIL: could not extract libnotify path from Stop hook" >&2
+    errors=$((errors + 1))
+  fi
 
   echo ""
   if [ "$errors" -gt 0 ]; then
