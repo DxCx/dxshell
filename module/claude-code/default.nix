@@ -32,7 +32,18 @@ in {
       home.packages = [pkgs.claude-code];
     }
     (lib.mkIf ccCfg.manageSettings {
-      home.file.".claude/settings.json".source = settingsFile;
+      # force = true so HM clobbers any pre-existing file at this path
+      # instead of failing activation or trying to back it up. Claude Code
+      # rewrites ~/.claude/settings.json out-of-band whenever it runs
+      # without the HM symlink in place (after a system rollback, on a
+      # fresh checkout, etc), and without force=true that rewritten file
+      # collides with HM on the next switch — or, with backupFileExtension
+      # set, fills the backup slot and then the next cycle collides on the
+      # backup itself. The file is fully Nix-generated, so just clobber.
+      home.file.".claude/settings.json" = {
+        source = settingsFile;
+        force = true;
+      };
     })
   ]);
 }
