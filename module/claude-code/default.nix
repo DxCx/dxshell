@@ -21,29 +21,72 @@
   };
   formatPath = "${formatScript}/bin/dxshell-claude-format";
 
-  # Map enabled dxshell.lsp.* bundles to the official LSP plugins whose
-  # language-server binary that bundle already provides (see the binary table
-  # in the Claude Code plugin docs). Enabling the plugin turns on Claude Code's
-  # built-in LSP tool against the binary dxshell ships.
   lspCfg = cfg.lsp;
   ccp = ccCfg.plugins;
-  lspPlugins = lib.optionals (lspCfg.enable && ccp.lsp) (
+
+  # Official-marketplace plugins (trusted by default; no registration needed).
+  # The LSP set maps enabled dxshell.lsp.* bundles to the official LSP plugin
+  # whose language-server binary that bundle already provides, turning on Claude
+  # Code's built-in LSP tool (post-edit diagnostics + navigation).
+  officialLspPlugins = lib.optionals (lspCfg.enable && ccp.lsp) (
     lib.optionals lspCfg.systems.enable ["clangd-lsp" "rust-analyzer-lsp"]
     ++ lib.optionals lspCfg.scripting.enable ["pyright-lsp" "lua-lsp"]
     ++ lib.optionals lspCfg.web.enable ["typescript-lsp"]
   );
   officialPlugins =
-    lspPlugins
+    officialLspPlugins
     ++ lib.optionals ccp.codeReview ["code-review" "pr-review-toolkit"]
     ++ lib.optionals ccp.security ["security-guidance"];
-  enabledPlugins =
+  officialEnabled =
     lib.listToAttrs
-    (map (p: lib.nameValuePair "${p}@claude-plugins-official" true) officialPlugins)
-    // ccp.extra;
+    (map (p: lib.nameValuePair "${p}@claude-plugins-official" true) officialPlugins);
+
+  # Community marketplaces fetched from GitHub. Each contributes a marketplace
+  # registration plus its enabled plugin. These run third-party code; Claude
+  # Code prompts to trust the marketplace on first use.
+  community = [
+    {
+      enable = ccp.superpowers;
+      market = "superpowers-marketplace";
+      repo = "obra/superpowers-marketplace";
+      plugin = "superpowers";
+    }
+    {
+      enable = ccp.compoundEngineering;
+      market = "compound-engineering-plugin";
+      repo = "EveryInc/compound-engineering-plugin";
+      plugin = "compound-engineering";
+    }
+  ];
+  activeCommunity = lib.filter (c: c.enable) community;
+  communityMarkets = lib.listToAttrs (map (c:
+    lib.nameValuePair c.market {
+      source = {
+        source = "github";
+        inherit (c) repo;
+      };
+    })
+  activeCommunity);
+  communityEnabled = lib.listToAttrs (map (c:
+    lib.nameValuePair "${c.plugin}@${c.market}" true)
+  activeCommunity);
+
+  # Local dxshell LSP plugin for languages without an official plugin.
+  localLsp = import ./lsp-plugin.nix {inherit lib pkgs lspCfg;};
+  localLspActive = ccp.localLsp && lspCfg.enable && localLsp.path != null;
+  localMarkets = lib.optionalAttrs localLspActive {
+    dxshell.source = {
+      source = "directory";
+      inherit (localLsp) path;
+    };
+  };
+  localEnabled = lib.optionalAttrs localLspActive {"dxshell-lsp@dxshell" = true;};
+
+  enabledPlugins = officialEnabled // communityEnabled // localEnabled // ccp.extra;
+  marketplaces = communityMarkets // localMarkets // ccCfg.marketplaces;
 
   baseSettings = import ./settings.nix {
-    inherit lib pkgs ccCfg statuslinePath formatPath enabledPlugins;
-    inherit (ccCfg) marketplaces;
+    inherit lib pkgs ccCfg statuslinePath formatPath enabledPlugins marketplaces;
   };
   # recursiveUpdate replaces list values wholesale; that's why permissions.allow
   # and permissions.deny are extended via the dedicated extraAllow / extraDeny
