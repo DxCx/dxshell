@@ -143,6 +143,36 @@
           default = true;
           description = "Enable the official security-guidance plugin.";
         };
+        localLsp = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Ship a local dxshell plugin that gives Claude Code LSP intelligence
+            for the languages it has no official plugin for but dxshell already
+            provides a server for: Nix (nil), Bash, YAML, TOML, Markdown. Each
+            server is gated on the matching dxshell.lsp.* bundle.
+          '';
+        };
+        superpowers = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Register the obra/superpowers-marketplace and enable the superpowers
+            plugin (agentic workflow skills: /brainstorm, /write-plan, etc.).
+            Third-party code from GitHub — Claude Code prompts to trust the
+            marketplace on first use, and it adds per-turn context cost.
+          '';
+        };
+        compoundEngineering = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Register the EveryInc/compound-engineering-plugin marketplace and
+            enable the compound-engineering plugin (/ce-* ideate/plan/work/
+            review workflow). Third-party code from GitHub — same trust prompt
+            and context-cost caveats as superpowers.
+          '';
+        };
         extra = lib.mkOption {
           type = lib.types.attrsOf lib.types.bool;
           default = {};
