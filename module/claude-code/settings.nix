@@ -3,6 +3,7 @@
   pkgs,
   ccCfg,
   statuslinePath,
+  formatPath,
 }: let
   defaultAllow = [
     # Read-only inspection — never needs a prompt
@@ -45,26 +46,53 @@
     env = {
       EDITOR = "nvim";
     };
+
+    # Retain sessions, orphaned worktrees, tasks and backups longer than the
+    # 30-day default so octorus rally state and review sessions stick around.
+    inherit (ccCfg) cleanupPeriodDays;
+  };
+
+  # Deeper reasoning by default — Claude is the reviewing AI here (locally and
+  # as octorus's headless reviewer), so favour thoroughness over latency.
+  reasoning = lib.optionalAttrs ccCfg.deepReasoning {
+    effortLevel = "high";
+    alwaysThinkingEnabled = true;
   };
 
   # Stop hook fires notify-send. The DBus guard makes it a no-op on
   # headless / SSH sessions where no session bus exists.
   notifyCmd = ''[ -n "''${DBUS_SESSION_BUS_ADDRESS:-}" ] && ${pkgs.libnotify}/bin/notify-send -a "Claude Code" "Claude finished" "$(basename "$PWD")" || true'';
 
-  stopHook = lib.optionalAttrs ccCfg.notifyOnStop {
-    hooks = {
-      Stop = [
+  stopHooks = lib.optionals ccCfg.notifyOnStop [
+    {
+      matcher = "";
+      hooks = [
         {
-          matcher = "";
-          hooks = [
-            {
-              type = "command";
-              command = notifyCmd;
-            }
-          ];
+          type = "command";
+          command = notifyCmd;
         }
       ];
-    };
-  };
+    }
+  ];
+
+  # PostToolUse formatter keeps Claude's edits compliant with the formatters
+  # that `nix flake check` enforces (alejandra, statix, shfmt).
+  postToolUseHooks = lib.optionals ccCfg.formatOnEdit [
+    {
+      matcher = "Edit|Write|MultiEdit";
+      hooks = [
+        {
+          type = "command";
+          command = formatPath;
+        }
+      ];
+    }
+  ];
+
+  hooks =
+    (lib.optionalAttrs (stopHooks != []) {Stop = stopHooks;})
+    // (lib.optionalAttrs (postToolUseHooks != []) {PostToolUse = postToolUseHooks;});
+
+  hookAttr = lib.optionalAttrs (hooks != {}) {inherit hooks;};
 in
-  lib.recursiveUpdate base stopHook
+  base // reasoning // hookAttr

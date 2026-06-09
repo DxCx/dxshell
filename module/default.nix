@@ -91,6 +91,32 @@
         default = true;
         description = "Send a desktop notification (libnotify) when Claude finishes a turn.";
       };
+      formatOnEdit = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Install a PostToolUse hook that reformats files Claude edits
+          (alejandra + statix for .nix, shfmt for .sh) so its output matches
+          the style `nix flake check` enforces.
+        '';
+      };
+      deepReasoning = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Default to high reasoning effort and always-on extended thinking,
+          trading latency for more thorough analysis (useful when Claude is the
+          reviewing AI, including octorus's headless reviewer).
+        '';
+      };
+      cleanupPeriodDays = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 60;
+        description = ''
+          Days to retain sessions, orphaned subagent worktrees, tasks and
+          backups (Claude Code's cleanupPeriodDays; default upstream is 30).
+        '';
+      };
       extraAllow = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];

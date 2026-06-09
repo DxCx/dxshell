@@ -14,8 +14,15 @@
   };
   statuslinePath = "${statuslineScript}/bin/dxshell-claude-statusline";
 
+  formatScript = pkgs.writeShellApplication {
+    name = "dxshell-claude-format";
+    runtimeInputs = [pkgs.jq pkgs.alejandra pkgs.statix pkgs.shfmt];
+    text = builtins.readFile ./format.sh;
+  };
+  formatPath = "${formatScript}/bin/dxshell-claude-format";
+
   baseSettings = import ./settings.nix {
-    inherit lib pkgs ccCfg statuslinePath;
+    inherit lib pkgs ccCfg statuslinePath formatPath;
   };
   # recursiveUpdate replaces list values wholesale; that's why permissions.allow
   # and permissions.deny are extended via the dedicated extraAllow / extraDeny
