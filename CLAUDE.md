@@ -39,7 +39,7 @@ Each feature is a separate `.nix` file under `module/` with:
 - A conditional config block using `lib.mkIf`
 - All features default to enabled
 
-Module options: `dxshell.enable`, `dxshell.neovim.enable`, `dxshell.git.enable`, `dxshell.zsh.enable`, `dxshell.tmux.enable`, `dxshell.cliTools.enable`, `dxshell.allowUnfree`, `dxshell.claudeCode.enable`.
+Module options: `dxshell.enable`, `dxshell.neovim.enable`, `dxshell.git.enable`, `dxshell.zsh.enable`, `dxshell.tmux.enable`, `dxshell.cliTools.enable`, `dxshell.allowUnfree`, `dxshell.claudeCode.enable`, `dxshell.octorus.enable`.
 
 The `module/extensions/default.nix` provides an extension point for custom modules.
 

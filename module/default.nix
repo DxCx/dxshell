@@ -115,6 +115,69 @@
         '';
       };
     };
+
+    octorus = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Enable octorus, a terminal UI for reviewing GitHub PRs and local
+          diffs with AI-driven review/fix cycles (binary: `or`).
+        '';
+      };
+      manageConfig = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Deploy an opinionated ~/.config/octorus/config.toml. Disable to manage
+          the file yourself (e.g. via `or init`).
+        '';
+      };
+      provider = lib.mkOption {
+        type = lib.types.enum ["claude" "codex"];
+        default = "claude";
+        description = ''
+          AI backend used for both the reviewer and reviewee roles. octorus
+          launches the matching CLI headless, so "claude" requires
+          dxshell.claudeCode.enable.
+        '';
+      };
+      reviewOnly = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Single review pass with no fix phase (the reviewer comments but the
+          reviewee never edits). Leave false for the full review<->fix rally.
+        '';
+      };
+      autoPost = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Post AI proposals to the PR without a confirmation prompt. Defaults to
+          false so remote reviews always confirm before any outward-facing post.
+        '';
+      };
+      maxIterations = lib.mkOption {
+        type = lib.types.ints.between 1 100;
+        default = 10;
+        description = "Maximum review/fix cycles before the rally stops.";
+      };
+      theme = lib.mkOption {
+        type = lib.types.str;
+        default = "base16-ocean.dark";
+        description = "syntect theme for the diff viewer (e.g. Dracula, Solarized).";
+      };
+      extraSettings = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
+        default = {};
+        description = ''
+          Attrset merged on top of the generated config.toml via
+          lib.recursiveUpdate. List values (e.g.
+          ai.reviewee_additional_tools) are replaced wholesale, not merged.
+        '';
+      };
+    };
   };
 
   imports = [
@@ -124,6 +187,7 @@
     ./cli-tools.nix
     ./lsp.nix
     ./claude-code
+    ./octorus.nix
     ./zsh
     ./tmux
     ./extensions
