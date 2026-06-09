@@ -1,5 +1,17 @@
 {
   "nodes": {
+    "claude-code-schema": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-ODbi2kJg0O6Wuxc8b74bz0blLdfNvmtpv9Rd49Zk+ds=",
+        "type": "file",
+        "url": "https://json.schemastore.org/claude-code-settings.json"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://json.schemastore.org/claude-code-settings.json"
+      }
+    },
     "dxnixinfra": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -293,6 +305,7 @@
     },
     "root": {
       "inputs": {
+        "claude-code-schema": "claude-code-schema",
         "dxnixinfra": "dxnixinfra",
         "dxvim": "dxvim",
         "home-manager": "home-manager",
