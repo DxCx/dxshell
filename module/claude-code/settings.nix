@@ -4,6 +4,8 @@
   ccCfg,
   statuslinePath,
   formatPath,
+  enabledPlugins,
+  marketplaces,
 }: let
   defaultAllow = [
     # Read-only inspection — never needs a prompt
@@ -94,5 +96,12 @@
     // (lib.optionalAttrs (postToolUseHooks != []) {PostToolUse = postToolUseHooks;});
 
   hookAttr = lib.optionalAttrs (hooks != {}) {inherit hooks;};
+
+  # enabledPlugins entries are "plugin@marketplace" => bool; the official
+  # marketplace is trusted by default, so its plugins need no marketplace
+  # registration. marketplaces feeds extraKnownMarketplaces for any others.
+  pluginAttr =
+    (lib.optionalAttrs (enabledPlugins != {}) {inherit enabledPlugins;})
+    // (lib.optionalAttrs (marketplaces != {}) {extraKnownMarketplaces = marketplaces;});
 in
-  base // reasoning // hookAttr
+  base // reasoning // hookAttr // pluginAttr

@@ -117,6 +117,52 @@
           backups (Claude Code's cleanupPeriodDays; default upstream is 30).
         '';
       };
+      plugins = {
+        lsp = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Auto-enable the official Claude Code LSP plugins matching the
+            enabled dxshell.lsp.* bundles (clangd-lsp, rust-analyzer-lsp,
+            pyright-lsp, typescript-lsp, lua-lsp). Those bundles already ship
+            the language-server binaries, so this just turns on Claude Code's
+            built-in LSP tool (post-edit diagnostics + code navigation) and
+            stops the per-language "install language server" prompts.
+          '';
+        };
+        codeReview = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Enable the official code-review and pr-review-toolkit plugins for
+            local diff and GitHub PR reviews.
+          '';
+        };
+        security = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Enable the official security-guidance plugin.";
+        };
+        extra = lib.mkOption {
+          type = lib.types.attrsOf lib.types.bool;
+          default = {};
+          example = {"github@claude-plugins-official" = true;};
+          description = ''
+            Additional "plugin@marketplace" => enabled entries merged into
+            enabledPlugins (e.g. official external-integration plugins, or
+            plugins from a marketplace registered via claudeCode.marketplaces).
+          '';
+        };
+      };
+      marketplaces = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
+        default = {};
+        description = ''
+          extraKnownMarketplaces entries registering non-official plugin
+          marketplaces. See the Claude Code plugin-settings documentation for
+          the per-entry schema (source.source = "github" | "url" | ...).
+        '';
+      };
       extraAllow = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
