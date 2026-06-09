@@ -36,7 +36,10 @@
   officialPlugins =
     officialLspPlugins
     ++ lib.optionals ccp.codeReview ["code-review" "pr-review-toolkit"]
-    ++ lib.optionals ccp.security ["security-guidance"];
+    ++ lib.optionals ccp.security ["security-guidance"]
+    ++ lib.optionals ccp.featureDev ["feature-dev"]
+    ++ lib.optionals ccp.hookify ["hookify"]
+    ++ lib.optionals ccp.claudeMd ["claude-md-management"];
   officialEnabled =
     lib.listToAttrs
     (map (p: lib.nameValuePair "${p}@claude-plugins-official" true) officialPlugins);
@@ -56,6 +59,30 @@
       market = "compound-engineering-plugin";
       repo = "EveryInc/compound-engineering-plugin";
       plugin = "compound-engineering";
+    }
+    {
+      enable = ccp.semgrep;
+      market = "semgrep-marketplace";
+      repo = "semgrep/mcp-marketplace";
+      plugin = "semgrep";
+    }
+    {
+      enable = ccp.codspeed;
+      market = "codspeed-plugin-marketplace";
+      repo = "CodSpeedHQ/codspeed";
+      plugin = "codspeed";
+    }
+    {
+      enable = ccp.tddGuard;
+      market = "tdd-guard";
+      repo = "nizos/tdd-guard";
+      plugin = "tdd-guard";
+    }
+    {
+      enable = ccp.pythonQuality;
+      market = "python-library-dev";
+      repo = "wdm0006/python-skills";
+      plugin = "python-library-quality";
     }
   ];
   activeCommunity = lib.filter (c: c.enable) community;

@@ -143,6 +143,33 @@
           default = true;
           description = "Enable the official security-guidance plugin.";
         };
+        featureDev = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Enable the official feature-dev plugin (/feature-dev): a
+            code-explorer + code-architect + code-reviewer agent loop that bakes
+            design and review steps into feature work.
+          '';
+        };
+        hookify = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Enable the official hookify plugin: generate deterministic
+            PreToolUse/PostToolUse guardrails (enforce build/lint/test gates,
+            block edits to generated files) that Claude cannot bypass.
+          '';
+        };
+        claudeMd = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Enable the official claude-md-management plugin: audit CLAUDE.md
+            quality and capture session learnings so project conventions stay
+            current.
+          '';
+        };
         localLsp = lib.mkOption {
           type = lib.types.bool;
           default = true;
@@ -171,6 +198,41 @@
             enable the compound-engineering plugin (/ce-* ideate/plan/work/
             review workflow). Third-party code from GitHub — same trust prompt
             and context-cost caveats as superpowers.
+          '';
+        };
+        semgrep = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Register semgrep/mcp-marketplace and enable the semgrep plugin:
+            semantic SAST (taint flows, injection, unsafe patterns) as a
+            continuous quality gate over generated code. Third-party marketplace.
+          '';
+        };
+        codspeed = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Register CodSpeedHQ/codspeed and enable the codspeed plugin:
+            performance-regression analysis with explicit C/C++ and Python
+            support. Third-party marketplace.
+          '';
+        };
+        tddGuard = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Register nizos/tdd-guard and enable the tdd-guard plugin: mechanically
+            enforce test-first discipline on agent output. Third-party marketplace.
+          '';
+        };
+        pythonQuality = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Register wdm0006/python-skills and enable python-library-quality:
+            strict typing (mypy), ruff, and Hypothesis property-based testing
+            patterns for Python. Third-party marketplace.
           '';
         };
         extra = lib.mkOption {
