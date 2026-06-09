@@ -21,8 +21,29 @@
   };
   formatPath = "${formatScript}/bin/dxshell-claude-format";
 
+  # Map enabled dxshell.lsp.* bundles to the official LSP plugins whose
+  # language-server binary that bundle already provides (see the binary table
+  # in the Claude Code plugin docs). Enabling the plugin turns on Claude Code's
+  # built-in LSP tool against the binary dxshell ships.
+  lspCfg = cfg.lsp;
+  ccp = ccCfg.plugins;
+  lspPlugins = lib.optionals (lspCfg.enable && ccp.lsp) (
+    lib.optionals lspCfg.systems.enable ["clangd-lsp" "rust-analyzer-lsp"]
+    ++ lib.optionals lspCfg.scripting.enable ["pyright-lsp" "lua-lsp"]
+    ++ lib.optionals lspCfg.web.enable ["typescript-lsp"]
+  );
+  officialPlugins =
+    lspPlugins
+    ++ lib.optionals ccp.codeReview ["code-review" "pr-review-toolkit"]
+    ++ lib.optionals ccp.security ["security-guidance"];
+  enabledPlugins =
+    lib.listToAttrs
+    (map (p: lib.nameValuePair "${p}@claude-plugins-official" true) officialPlugins)
+    // ccp.extra;
+
   baseSettings = import ./settings.nix {
-    inherit lib pkgs ccCfg statuslinePath formatPath;
+    inherit lib pkgs ccCfg statuslinePath formatPath enabledPlugins;
+    inherit (ccCfg) marketplaces;
   };
   # recursiveUpdate replaces list values wholesale; that's why permissions.allow
   # and permissions.deny are extended via the dedicated extraAllow / extraDeny
