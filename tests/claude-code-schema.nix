@@ -8,5 +8,5 @@
 {pkgs}:
 pkgs.fetchurl {
   url = "https://json.schemastore.org/claude-code-settings.json";
-  sha256 = "1zm2i8k6y4czlvm34g6ygic14rm1fsg0ydqhj92w8sin1r293218";
+  sha256 = "1y5q74a2jvsjhis608xzqp86w2csi2pz97gxzpzbjh1v073xzzr2";
 }
