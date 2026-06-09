@@ -23,6 +23,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     utils.url = "github:gytis-ivaskevicius/flake-utils-plus";
+
+    # Official Claude Code settings.json schema, used by the
+    # validate-claude-settings check. Tracked as a flake input (not a
+    # hand-pinned fetchurl) so its hash lives in flake.lock and renovate's
+    # lockFileMaintenance refreshes it automatically — no manual hash bumps.
+    claude-code-schema = {
+      url = "file+https://json.schemastore.org/claude-code-settings.json";
+      flake = false;
+    };
   };
 
   outputs = inputs @ {
@@ -93,7 +102,7 @@
         dxshell_install = import ./packages/dxshell-install.nix {inherit pkgs dxshell_package;};
         dxshell_update = import ./packages/dxshell-update.nix {inherit pkgs;};
 
-        claudeCodeSchema = import ./tests/claude-code-schema.nix {inherit pkgs;};
+        claudeCodeSchema = inputs.claude-code-schema;
 
         infraOutputs = dxnixinfra.lib.mkFlakeOutputs {
           src = self;
