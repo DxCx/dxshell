@@ -24,7 +24,7 @@ For hosts where `$HOME` is on NFS (or you want everything on a specific local di
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --local-dir-install
 ```
 
-Everything — the `nix-portable` binary, its Nix store, the repo clone, and all shell state — lives in one self-contained `./.dxshell/` tree, with a `./dxshell` launcher symlink next to it. Nothing is written to `$HOME`, no sudo, no `/nix`. Subsequent runs: `./dxshell`. To update, re-run the same one-liner from the same directory.
+Everything — the `nix-portable` binary, its Nix store, the repo clone, and all shell state — lives in one self-contained `./.dxshell/` tree, with a `./dxshell` launcher symlink next to it. Nothing is written to `$HOME`, no sudo, no `/nix`. Unlike the other flavors, this one **installs and builds but does not start a session** — launch it yourself with `./dxshell`. To update, re-run the same one-liner from the same directory.
 
 It also forces nix-portable's `proot` backend, which works on hardened hosts that block the namespaces `bwrap` needs (override per run with `NP_RUNTIME=bwrap ./dxshell` if your host allows them).
 
