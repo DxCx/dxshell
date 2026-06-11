@@ -32,6 +32,26 @@ if ! command -v nix-env >/dev/null 2>&1; then
   unset _nix_profile_script
 fi
 
+# Home Manager activation invokes Nix's legacy CLIs (nix-build, nix-env) by bare
+# name, assuming they are on PATH. Under nix-portable they are not — `nix run`
+# does not inject them — which aborts activation with "nix-build: command not
+# found". Prepend the active Nix profile's bin dir (falling back to the nix
+# package in the store) so activation succeeds. No-op when nix-build already
+# resolves (e.g. real multi-user / single-user Nix installs), and uses globbing
+# only — no readlink/dirname, so it can never emit "missing operand".
+if ! command -v nix-build >/dev/null 2>&1; then
+  for _nix_bindir in \
+    /nix/var/nix/profiles/default/bin \
+    /nix/store/*-nix-[0-9]*/bin; do
+    if [ -x "${_nix_bindir}/nix-build" ]; then
+      PATH="${_nix_bindir}:${PATH}"
+      export PATH
+      break
+    fi
+  done
+  unset _nix_bindir
+fi
+
 # Back up any pre-existing ~/.claude/settings.json so HM activation does not
 # abort with "Existing file is in the way". Symlinks (already-managed by a
 # previous activation) and missing files are left alone.
