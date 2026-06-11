@@ -111,6 +111,11 @@ in {
       };
     };
 
+    # Put user-local binaries (e.g. ~/.local/bin/cursor) on PATH. $HOME is the
+    # real home in both modes: the standalone wrapper pins HOME back to the real
+    # home, so this resolves to the user's actual ~/.local/bin.
+    home.sessionPath = ["$HOME/.local/bin"];
+
     home.packages = with pkgs; [nix-zsh-completions];
   };
 }
