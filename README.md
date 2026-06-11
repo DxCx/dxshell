@@ -211,11 +211,7 @@ Clean reinstall (wipes all previous state and starts fresh):
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone --clean
 ```
 
-Manual cleanup — remove everything:
-
-```bash
-rm -rf ~/.dxshell ~/.dxshell-state ~/.local/bin/dxshell
-```
+To remove everything, see [Uninstall](#uninstall).
 
 ### 3. Permanent install (optional)
 
@@ -235,9 +231,16 @@ dxshell-update
 
 ### Uninstall
 
+The uninstaller collects every file dxshell installed, prints the full list, and deletes **only after you type `confirm`** — anything else aborts with no changes:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/uninstall.sh | sh
+```
+
+If dxshell is your login shell (permanent install), restore it first:
+
 ```bash
 sudo chsh -s /bin/bash "$USER"
-rm -rf ~/.dxshell ~/.dxshell-state ~/.local/bin/dxshell ~/.local/share/dxshell
 ```
 
 ## Advanced Usage
