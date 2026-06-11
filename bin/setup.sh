@@ -307,12 +307,18 @@ case "$MODE" in
         echo "Run it with: $LOCAL_PARENT/dxshell"
       fi
 
+      # Pre-build the closure so the first launch is instant, but do NOT
+      # start a session: a launch from inside the installer pipe gets a
+      # degraded terminal, and a local-dir install does not change the login
+      # shell — it is always launched manually anyway.
       echo ""
-      echo "Starting dxshell..."
-      export DXSHELL_FLAKE="$DXSHELL_DIR"
-      export DXSHELL_STATE_DIR="$DXSHELL_BASE/state"
+      echo "Building dxshell (the first build may take a while)..."
       # shellcheck disable=SC2086
-      exec $NIX_CMD run --accept-flake-config "path:$DXSHELL_DIR"
+      $NIX_CMD build --no-link --accept-flake-config "path:$DXSHELL_DIR"
+      echo ""
+      echo "dxshell installed. Launch it with:"
+      echo "  $LOCAL_PARENT/dxshell"
+      exit 0
     fi
 
     # Create a launcher script. We bake the resolved NIX_CMD into the launcher
