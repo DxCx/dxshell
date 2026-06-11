@@ -119,6 +119,10 @@ export XDG_CACHE_HOME="${DXSHELL_HOME}/.cache"
 # at DXSHELL_HOME by activation, and this is more reliable than depending
 # on HM's session vars resolving through the /tmp symlink chain.
 export PATH="${DXSHELL_HOME}/.nix-profile/bin${PATH:+:$PATH}"
+# Point SHELL at the dxshell zsh. Programs that spawn shells via $SHELL —
+# tmux's default-shell, vim's :terminal, etc. — would otherwise launch the
+# user's login shell (e.g. bash) without any dxshell configuration.
+export SHELL="@ZSH@/bin/zsh"
 
 # When invoked with arguments (e.g., "dxshell -c 'command'"), forward them
 # to zsh.  This is required because $SHELL is set to the dxshell wrapper
@@ -134,6 +138,16 @@ fi
 # When used as a login shell, stdin is already a tty.
 if [ -t 0 ]; then
   exec @ZSH@/bin/zsh -l
-else
-  exec @ZSH@/bin/zsh -l </dev/tty
 fi
+
+# Prefer the concrete pty stderr points at (e.g. /dev/pts/3) over the
+# /dev/tty alias: tmux refuses clients whose stdin resolves to "/dev/tty"
+# ("open terminal failed: can't use /dev/tty").
+if [ -t 2 ]; then
+  _real_tty="$(readlink "/proc/self/fd/2" 2>/dev/null || true)"
+  if [ -n "${_real_tty}" ] && [ -c "${_real_tty}" ] && [ -r "${_real_tty}" ]; then
+    exec @ZSH@/bin/zsh -l <"${_real_tty}"
+  fi
+  unset _real_tty
+fi
+exec @ZSH@/bin/zsh -l </dev/tty
