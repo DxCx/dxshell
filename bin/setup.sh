@@ -3,6 +3,7 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone
 #   curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- install
+#   curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/setup.sh | sh -s -- standalone --local-dir-install
 #   GIT_BRANCH=fix-standalone curl ... | sh -s -- standalone  # use a specific branch
 set -eu
 
@@ -17,10 +18,13 @@ GIT_BRANCH="${GIT_BRANCH:-master}"
 CLEAN=0
 MODE=""
 POSITIONAL_IDX=0
+LOCAL_PARENT=""
 
 for arg in "$@"; do
   case "$arg" in
     --clean) CLEAN=1 ;;
+    --local-dir-install) LOCAL_PARENT="$PWD" ;;
+    --local-dir-install=*) LOCAL_PARENT="${arg#--local-dir-install=}" ;;
     *)
       POSITIONAL_IDX=$((POSITIONAL_IDX + 1))
       if [ "$POSITIONAL_IDX" = "1" ]; then
@@ -33,7 +37,7 @@ for arg in "$@"; do
 done
 
 if [ -z "$MODE" ]; then
-  echo "Usage: setup.sh <standalone|install> [--clean] [DXSHELL_DIR]" >&2
+  echo "Usage: setup.sh <standalone|install> [--clean] [--local-dir-install[=DIR]] [DXSHELL_DIR]" >&2
   exit 1
 fi
 
@@ -45,9 +49,52 @@ case "$MODE" in
     ;;
 esac
 
-# Directory: env > default (positional may have been set above)
+# ---------------------------------------------------------------------------
+# Local-dir install: resolve the self-contained base directory.
+# Either the flag was passed directly, or bootstrap.sh already resolved it
+# and exported DXSHELL_BASE.
+# ---------------------------------------------------------------------------
+if [ -n "$LOCAL_PARENT" ] && [ -z "${DXSHELL_BASE:-}" ]; then
+  if [ ! -d "$LOCAL_PARENT" ]; then
+    echo "error: --local-dir-install target '$LOCAL_PARENT' is not a directory" >&2
+    exit 1
+  fi
+  LOCAL_PARENT="$(cd "$LOCAL_PARENT" && pwd)"
+  DXSHELL_BASE="$LOCAL_PARENT/.dxshell"
+fi
+DXSHELL_BASE="${DXSHELL_BASE:-}"
+
+if [ -n "$DXSHELL_BASE" ]; then
+  if [ "$MODE" = "install" ]; then
+    echo "error: --local-dir-install cannot be combined with 'install' mode." >&2
+    echo "Permanent install bakes /nix/store paths that only resolve inside" >&2
+    echo "nix-portable's namespace. Use standalone mode instead." >&2
+    exit 1
+  fi
+  if [ -d "$DXSHELL_BASE/.git" ]; then
+    echo "error: $DXSHELL_BASE is a git clone (home-mode install layout)." >&2
+    echo "Refusing to reuse it as a local-install container. Remove it first" >&2
+    echo "(see bin/uninstall.sh) or use a different directory." >&2
+    exit 1
+  fi
+  LOCAL_PARENT="${DXSHELL_BASE%/*}"
+  export DXSHELL_BASE
+  mkdir -p "$DXSHELL_BASE"
+  # The whole tree (store, state, clone) lives under the base, and the proot
+  # backend avoids bwrap's nested mount namespaces, which hardened hosts
+  # block. NP_RUNTIME stays overridable for hosts where bwrap works.
+  export NP_LOCATION="$DXSHELL_BASE"
+  NP_RUNTIME="${NP_RUNTIME:-proot}"
+  export NP_RUNTIME
+fi
+
+# Directory: env > local base > default (positional may have been set above)
 if [ -z "${DXSHELL_DIR:-}" ]; then
-  DXSHELL_DIR="$_HOME/.dxshell"
+  if [ -n "$DXSHELL_BASE" ]; then
+    DXSHELL_DIR="$DXSHELL_BASE/src"
+  else
+    DXSHELL_DIR="$_HOME/.dxshell"
+  fi
 fi
 
 # Ensure absolute path
@@ -66,9 +113,18 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$CLEAN" = "1" ]; then
   echo "Cleaning previous dxshell state..."
-  rm -rf "$_HOME/.dxshell-state" /tmp/dxshell-home
-  rm -rf "$DXSHELL_DIR"
-  rm -f "$_HOME/.local/bin/dxshell"
+  if [ -n "$DXSHELL_BASE" ]; then
+    # Local mode: wipe clone, state, and launcher, but keep the in-tree
+    # nix-portable binary and its store — mirrors home mode, which also
+    # preserves ~/.nix-portable, and avoids re-downloading everything.
+    rm -rf "$DXSHELL_BASE/state" /tmp/dxshell-home
+    rm -rf "$DXSHELL_DIR"
+    rm -f "$DXSHELL_BASE/.local/bin/dxshell" "$LOCAL_PARENT/dxshell"
+  else
+    rm -rf "$_HOME/.dxshell-state" /tmp/dxshell-home
+    rm -rf "$DXSHELL_DIR"
+    rm -f "$_HOME/.local/bin/dxshell"
+  fi
   echo "Done."
 fi
 
@@ -84,6 +140,20 @@ fi
 NIX_CMD=""
 
 ensure_nix() {
+  # Local-dir install: the tree is self-contained, so only its own in-tree
+  # nix-portable counts — a system nix would build into the wrong store.
+  if [ -n "$DXSHELL_BASE" ]; then
+    if [ -x "$DXSHELL_BASE/.local/bin/nix-portable" ]; then
+      NIX_CMD="$DXSHELL_BASE/.local/bin/nix-portable nix"
+      return 0
+    fi
+    echo "error: in-tree nix-portable not found at $DXSHELL_BASE/.local/bin/nix-portable" >&2
+    echo "" >&2
+    echo "Run the bootstrap one-liner, which downloads it for you:" >&2
+    echo "  curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --local-dir-install" >&2
+    exit 1
+  fi
+
   if command -v nix >/dev/null 2>&1; then
     NIX_CMD="nix"
     return 0
@@ -139,6 +209,11 @@ ${NIX_CONFIG:-}"
 # 4. Ensure current user is trusted (multi-user daemon setups)
 # ---------------------------------------------------------------------------
 ensure_trusted_user() {
+  # Local-dir installs never talk to a system daemon — nothing to trust.
+  if [ -n "$DXSHELL_BASE" ]; then
+    return 0
+  fi
+
   # Only relevant when nix-daemon is running (multi-user install)
   if ! systemctl is-active --quiet nix-daemon 2>/dev/null; then
     return 0
@@ -204,6 +279,42 @@ export DXSHELL_DIR
 # ---------------------------------------------------------------------------
 case "$MODE" in
   standalone)
+    if [ -n "$DXSHELL_BASE" ]; then
+      # Local-dir install: launcher lives inside the tree and bakes the full
+      # environment, so every later invocation is self-contained regardless of
+      # PATH or cwd. NP_RUNTIME stays overridable (e.g. NP_RUNTIME=bwrap dxshell).
+      mkdir -p "$DXSHELL_BASE/.local/bin"
+      {
+        echo '#!/bin/sh'
+        echo "export DXSHELL_FLAKE='$DXSHELL_DIR'"
+        echo "export NP_LOCATION='$DXSHELL_BASE'"
+        # shellcheck disable=SC2016 # expands at launch time, inside the launcher
+        echo 'export NP_RUNTIME="${NP_RUNTIME:-proot}"'
+        echo "export DXSHELL_STATE_DIR='$DXSHELL_BASE/state'"
+        echo "exec '$DXSHELL_BASE/.local/bin/nix-portable' nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config 'path:$DXSHELL_DIR'"
+      } >"$DXSHELL_BASE/.local/bin/dxshell"
+      chmod +x "$DXSHELL_BASE/.local/bin/dxshell"
+
+      # Entry symlink next to the tree. Never clobber a real user file that
+      # happens to be named "dxshell" — only (re)place a symlink.
+      if [ -e "$LOCAL_PARENT/dxshell" ] && [ ! -L "$LOCAL_PARENT/dxshell" ]; then
+        echo "WARNING: $LOCAL_PARENT/dxshell exists and is not a symlink — leaving it alone."
+        echo "Launch via: $DXSHELL_BASE/.local/bin/dxshell"
+      else
+        ln -sfn ".dxshell/.local/bin/dxshell" "$LOCAL_PARENT/dxshell"
+        echo ""
+        echo "Launcher created at $LOCAL_PARENT/dxshell"
+        echo "Run it with: $LOCAL_PARENT/dxshell"
+      fi
+
+      echo ""
+      echo "Starting dxshell..."
+      export DXSHELL_FLAKE="$DXSHELL_DIR"
+      export DXSHELL_STATE_DIR="$DXSHELL_BASE/state"
+      # shellcheck disable=SC2086
+      exec $NIX_CMD run --accept-flake-config "path:$DXSHELL_DIR"
+    fi
+
     # Create a launcher script. We bake the resolved NIX_CMD into the launcher
     # so subsequent `dxshell` invocations don't depend on PATH ordering — this
     # matters especially for the nix-portable case where the binary is in

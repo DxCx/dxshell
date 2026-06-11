@@ -12,7 +12,27 @@ A single curl-pipeable command that installs Nix (if missing) and drops you into
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --user
 ```
 
-Installs [`nix-portable`](https://github.com/DavHau/nix-portable) into `~/.local/bin` and stores all Nix state in `~/.nix-portable/`. **Nothing outside your `$HOME` is touched** — no sudo, no `/nix`. Works on shared `$HOME` mounts (e.g., NFS) across multiple servers, as long as they share the same CPU architecture.
+Installs [`nix-portable`](https://github.com/DavHau/nix-portable) into `~/.local/bin` and stores all Nix state in `~/.nix-portable/`. **Nothing outside your `$HOME` is touched** — no sudo, no `/nix`.
+
+> **Note:** a Nix store cannot live on NFS — builds abort on non-removable NFSv4 ACL attributes. If your `$HOME` is NFS-mounted, use the local directory install below instead.
+
+### Local directory — NFS home, no sudo
+
+For hosts where `$HOME` is on NFS (or you want everything on a specific local disk), `cd` to a directory on a **local** filesystem and run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --local-dir-install
+```
+
+Everything — the `nix-portable` binary, its Nix store, the repo clone, and all shell state — lives in one self-contained `./.dxshell/` tree, with a `./dxshell` launcher symlink next to it. Nothing is written to `$HOME`, no sudo, no `/nix`. Subsequent runs: `./dxshell`. To update, re-run the same one-liner from the same directory.
+
+It also forces nix-portable's `proot` backend, which works on hardened hosts that block the namespaces `bwrap` needs (override per run with `NP_RUNTIME=bwrap ./dxshell` if your host allows them).
+
+To install under a different directory without `cd`-ing there, pass it explicitly:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --local-dir-install=/path/on/local/disk
+```
 
 ### Server — with sudo
 
@@ -235,6 +255,12 @@ The uninstaller collects every file dxshell installed, prints the full list, and
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/uninstall.sh | sh
+```
+
+To also remove a local directory install, run it from that directory with the same flag (or pass `--local-dir-install=DIR`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/uninstall.sh | sh -s -- --local-dir-install
 ```
 
 If dxshell is your login shell (permanent install), restore it first:

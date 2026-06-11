@@ -63,6 +63,11 @@ pkgs.runCommand "test-scripts" {
   echo "=== Critical strings present ==="
   check "wrapper contains DXSHELL_STATE" grep -q 'DXSHELL_STATE' "$wrapper"
   check "wrapper contains claude settings backup logic" grep -q 'dxshell-backup-' "$wrapper"
+  # Regression: under nix-portable, `nix run` does not put Nix's legacy CLIs on
+  # PATH, so Home Manager activation fails with "nix-build: command not found".
+  # The wrapper must resolve nix-build itself before activating.
+  check "wrapper resolves nix-build for HM activation under nix-portable" \
+    grep -q 'nix-build' "$wrapper"
   check "installer contains DXSHELL_BIN" grep -q 'DXSHELL_BIN' "$installer"
   check "updater contains fetch origin" grep -q 'fetch origin' "$updater"
 
