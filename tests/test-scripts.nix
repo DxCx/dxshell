@@ -68,6 +68,15 @@ pkgs.runCommand "test-scripts" {
   # The wrapper must resolve nix-build itself before activating.
   check "wrapper resolves nix-build for HM activation under nix-portable" \
     grep -q 'nix-build' "$wrapper"
+  # Regression: without SHELL pointing at dxshell's zsh, tmux (which uses
+  # $SHELL as default-shell) spawns the user's login bash for new windows.
+  check "wrapper exports SHELL pointing at the dxshell zsh" \
+    grep -qE 'export SHELL=.*/bin/zsh' "$wrapper"
+  # Regression: tmux refuses clients whose stdin is the /dev/tty alias
+  # ("open terminal failed: can't use /dev/tty"). For piped stdin the wrapper
+  # must reopen the concrete pty (resolved from stderr) instead.
+  check "wrapper reopens the real pty for piped stdin" \
+    grep -q '/proc/self/fd/2' "$wrapper"
   check "installer contains DXSHELL_BIN" grep -q 'DXSHELL_BIN' "$installer"
   check "updater contains fetch origin" grep -q 'fetch origin' "$updater"
 
