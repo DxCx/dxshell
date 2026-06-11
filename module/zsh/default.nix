@@ -67,6 +67,18 @@ in {
             done
             unset _dxshell_rc
           fi
+
+          # Expose the real login user's ~/.local/bin (e.g. ~/.local/bin/cursor,
+          # pip --user shims). DXSHELL_REAL_HOME is the real home in standalone
+          # and local-dir installs (the wrapper sets it); in a permanent install
+          # it is unset and HOME already is the real home. Guard on existence so
+          # flavors that deliberately avoid $HOME (local-dir on an NFS/hardened
+          # host) get no phantom PATH entry, and dedupe so re-sourcing is a no-op.
+          _dxshell_local_bin="''${DXSHELL_REAL_HOME:-''${HOME}}/.local/bin"
+          if [[ -d "''${_dxshell_local_bin}" && ":''${PATH}:" != *":''${_dxshell_local_bin}:"* ]]; then
+            PATH="''${_dxshell_local_bin}:''${PATH}"
+          fi
+          unset _dxshell_local_bin
         '';
 
         plugins = with pkgs;
