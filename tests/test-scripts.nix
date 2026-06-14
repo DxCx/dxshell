@@ -77,6 +77,12 @@ pkgs.runCommand "test-scripts" {
   # must reopen the concrete pty (resolved from stderr) instead.
   check "wrapper reopens the real pty for piped stdin" \
     grep -q '/proc/self/fd/2' "$wrapper"
+  # Regression: gitFull's bundled ssh is a Nix-glibc openssh that cannot resolve
+  # directory-managed (LDAP/SSSD) uids absent from /etc/passwd, breaking
+  # git-over-ssh ("No user exists for uid"). The wrapper must point git at the
+  # host ssh for such users.
+  check "wrapper steers git to host ssh for directory-managed users" \
+    grep -q 'GIT_SSH_COMMAND' "$wrapper"
   check "installer contains DXSHELL_BIN" grep -q 'DXSHELL_BIN' "$installer"
   check "updater contains fetch origin" grep -q 'fetch origin' "$updater"
 

@@ -124,6 +124,48 @@ export PATH="${DXSHELL_HOME}/.nix-profile/bin${PATH:+:$PATH}"
 # user's login shell (e.g. bash) without any dxshell configuration.
 export SHELL="@ZSH@/bin/zsh"
 
+# Directory-managed logins (LDAP / SSSD / NIS): gitFull's compiled-in ssh is a
+# Nix-glibc openssh, which cannot load the host's NSS modules and so fails
+# getpwuid for any uid not in the static /etc/passwd ("No user exists for uid
+# …"), breaking git-over-ssh. Nix glibc resolves a uid only via the built-in
+# 'files' source, so "uid absent from /etc/passwd" is exactly the set it can't
+# handle. For those users, steer git at the host ssh (host glibc + NSS, plus
+# the user's own ssh config/agent). Skipped when the uid is local, when no host
+# ssh is found, or when the user already set GIT_SSH_COMMAND.
+if [ -z "${GIT_SSH_COMMAND:-}" ]; then
+  _dxshell_uid="$(@COREUTILS@/bin/id -u 2>/dev/null || true)"
+  _dxshell_uid_local=0
+  if [ -n "${_dxshell_uid}" ] && [ -r /etc/passwd ]; then
+    while IFS=: read -r _ _ _pw_uid _; do
+      if [ "${_pw_uid}" = "${_dxshell_uid}" ]; then
+        _dxshell_uid_local=1
+        break
+      fi
+    done </etc/passwd
+  fi
+  if [ "${_dxshell_uid_local}" = "0" ]; then
+    _dxshell_host_ssh=""
+    for _ssh_cand in /usr/bin/ssh /bin/ssh; do
+      if [ -x "${_ssh_cand}" ]; then
+        _dxshell_host_ssh="${_ssh_cand}"
+        break
+      fi
+    done
+    # Fall back to any ssh on PATH that is not the (broken) Nix one.
+    if [ -z "${_dxshell_host_ssh}" ]; then
+      _ssh_cand="$(command -v ssh 2>/dev/null || true)"
+      case "${_ssh_cand}" in
+        /nix/store/*) ;;
+        ?*) _dxshell_host_ssh="${_ssh_cand}" ;;
+      esac
+    fi
+    if [ -n "${_dxshell_host_ssh}" ]; then
+      export GIT_SSH_COMMAND="${_dxshell_host_ssh}"
+    fi
+  fi
+  unset _dxshell_uid _dxshell_uid_local _pw_uid _dxshell_host_ssh _ssh_cand
+fi
+
 # When invoked with arguments (e.g., "dxshell -c 'command'"), forward them
 # to zsh.  This is required because $SHELL is set to the dxshell wrapper
 # when used as a login shell, and programs like SSH use "$SHELL -c ..."
