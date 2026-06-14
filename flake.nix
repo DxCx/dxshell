@@ -32,6 +32,17 @@
       url = "file+https://json.schemastore.org/claude-code-settings.json";
       flake = false;
     };
+
+    # octorus (the `or` binary) source, pinned to an upstream release tag.
+    # We build it ourselves (module/octorus.nix) instead of taking pkgs.octorus
+    # so the version tracks upstream releases directly rather than waiting for a
+    # nixpkgs bump. Renovate's nix manager (github-tags datasource) bumps the
+    # tag below as new releases land; cargoLock.lockFile reads vendored-dep
+    # hashes from the source's own Cargo.lock, so there are no hashes to update.
+    octorus-src = {
+      url = "github:ushironoko/octorus/v0.6.6";
+      flake = false;
+    };
   };
 
   outputs = inputs @ {
@@ -42,6 +53,7 @@
   }: let
     hmModule = {lib, ...}: {
       _module.args.dxvim = inputs.dxvim;
+      _module.args.octorus-src = inputs.octorus-src;
       imports = [./module];
       dxshell.enable = lib.mkDefault true;
     };

@@ -303,6 +303,23 @@
         "type": "github"
       }
     },
+    "octorus-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1780472535,
+        "narHash": "sha256-IkRHU6gmafmLFitYDQnumqj8X2H3LB0c/Cs8Edo0NaQ=",
+        "owner": "ushironoko",
+        "repo": "octorus",
+        "rev": "c1c06c9071048e198a5ee762f88b75a1f3e722d4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ushironoko",
+        "ref": "v0.6.6",
+        "repo": "octorus",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "claude-code-schema": "claude-code-schema",
@@ -313,6 +330,7 @@
           "dxnixinfra",
           "nixpkgs"
         ],
+        "octorus-src": "octorus-src",
         "utils": "utils"
       }
     },

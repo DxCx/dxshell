@@ -2,10 +2,34 @@
   config,
   lib,
   pkgs,
+  octorus-src,
   ...
 }: let
   cfg = config.dxshell;
   oct = cfg.octorus;
+
+  # Build octorus from the pinned upstream release tag (flake input
+  # `octorus-src`) rather than pkgs.octorus, so the version tracks upstream
+  # releases directly instead of waiting for a nixpkgs bump. The derivation
+  # version and the vendored-dep hashes both come from the source itself
+  # (Cargo.toml / Cargo.lock), so the only thing that ever changes is the tag in
+  # flake.nix — which renovate bumps automatically. See flake.nix:octorus-src.
+  octorusPackage = pkgs.rustPlatform.buildRustPackage {
+    pname = "octorus";
+    version = (lib.importTOML "${octorus-src}/Cargo.toml").package.version;
+    src = octorus-src;
+    cargoLock.lockFile = "${octorus-src}/Cargo.lock";
+    nativeBuildInputs = [pkgs.installShellFiles];
+    # Several loader tests shell out to `git` to build temp repos; the sandboxed
+    # check phase has no git on PATH without this.
+    nativeCheckInputs = [pkgs.git];
+    meta = {
+      description = "TUI PR review tool for GitHub";
+      homepage = "https://github.com/ushironoko/octorus";
+      license = lib.licenses.mit;
+      mainProgram = "octorus";
+    };
+  };
 
   # octorus reads/writes TOML at ~/.config/octorus/config.toml. Field names and
   # the `[ai] [diff] [layout]` sections track src/config/schema.rs upstream;
@@ -46,7 +70,7 @@
 in {
   config = lib.mkIf (cfg.enable && oct.enable) (lib.mkMerge [
     {
-      home.packages = [pkgs.octorus];
+      home.packages = [octorusPackage];
 
       # The binary is `or`; expose a discoverable `octorus` alias alongside it.
       programs.zsh.shellAliases.octorus = "or";
