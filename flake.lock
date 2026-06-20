@@ -66,11 +66,11 @@
         "sidekick-nvim": "sidekick-nvim"
       },
       "locked": {
-        "lastModified": 1781833654,
-        "narHash": "sha256-pYANuROMZL5eOGat+Bap2YQtd7oe6KdMiNLunU1cWhQ=",
+        "lastModified": 1781924755,
+        "narHash": "sha256-AM19TyMNRbzFah16tP+0OyswaqY+fbnhDH9X1AuMbng=",
         "owner": "DxCx",
         "repo": "dxvim",
-        "rev": "9fd174936e63a010f37fbf06b8b6cfd1d22f5507",
+        "rev": "66a8ded4a941cb2b879fb7882d45c54a00ee932a",
         "type": "github"
       },
       "original": {
@@ -222,29 +222,6 @@
         "type": "github"
       }
     },
-    "ndg": {
-      "inputs": {
-        "nixpkgs": [
-          "dxvim",
-          "nvf",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1779233504,
-        "narHash": "sha256-YIKEyzh0NFQlD0O92LQQNMoVCDwV8yw1Xz0Iu+4ZC5U=",
-        "owner": "feel-co",
-        "repo": "ndg",
-        "rev": "86f6644411a64d5413711895b7cf6e0e1be465b6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "feel-co",
-        "ref": "refs/tags/v2.8.0",
-        "repo": "ndg",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1781607440,
@@ -282,7 +259,6 @@
         "flake-compat": "flake-compat",
         "flake-parts": "flake-parts",
         "mnw": "mnw",
-        "ndg": "ndg",
         "nixpkgs": [
           "dxvim",
           "nixpkgs"
@@ -290,11 +266,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1781534482,
-        "narHash": "sha256-d3UIqXuigQhsc7amQkZ7F+SWnaJFAxIROE2f2X+pzUs=",
+        "lastModified": 1781910657,
+        "narHash": "sha256-j6OlR6sKwEnRp6foT40sAXACCbGh5XdN2prSQVTlfhI=",
         "owner": "notashelf",
         "repo": "nvf",
-        "rev": "63d8fc82d652c23419a837e2b2934dd4bead04f3",
+        "rev": "56e20dd9c8815087100adeb8b1892e3633ff9bbc",
         "type": "github"
       },
       "original": {
