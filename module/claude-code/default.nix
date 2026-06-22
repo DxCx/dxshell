@@ -61,12 +61,6 @@
       plugin = "compound-engineering";
     }
     {
-      enable = ccp.semgrep;
-      market = "semgrep-marketplace";
-      repo = "semgrep/mcp-marketplace";
-      plugin = "semgrep";
-    }
-    {
       enable = ccp.codspeed;
       market = "codspeed-plugin-marketplace";
       repo = "CodSpeedHQ/codspeed";
@@ -127,9 +121,7 @@ in {
   # flake.nix, so we don't gate on it here.
   config = lib.mkIf (cfg.enable && ccCfg.enable) (lib.mkMerge [
     {
-      # semgrep plugin hooks invoke the `semgrep` CLI (semgrep mcp ...); install
-      # the binary whenever that plugin is enabled so the hooks don't error out.
-      home.packages = [pkgs.claude-code] ++ lib.optional ccp.semgrep pkgs.semgrep;
+      home.packages = [pkgs.claude-code];
     }
     (lib.mkIf ccCfg.manageSettings {
       # force = true so HM clobbers any pre-existing file at this path
