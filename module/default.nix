@@ -200,15 +200,6 @@
             and context-cost caveats as superpowers.
           '';
         };
-        semgrep = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = ''
-            Register semgrep/mcp-marketplace and enable the semgrep plugin:
-            semantic SAST (taint flows, injection, unsafe patterns) as a
-            continuous quality gate over generated code. Third-party marketplace.
-          '';
-        };
         codspeed = lib.mkOption {
           type = lib.types.bool;
           default = true;
