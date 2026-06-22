@@ -282,16 +282,16 @@
     "octorus-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1780472535,
-        "narHash": "sha256-IkRHU6gmafmLFitYDQnumqj8X2H3LB0c/Cs8Edo0NaQ=",
-        "owner": "ushironoko",
+        "lastModified": 1782138781,
+        "narHash": "sha256-SwPjoUSCqN8oMJQ6nb0clGEhrOI11lhgyF/FGanWBoc=",
+        "owner": "DxCx",
         "repo": "octorus",
-        "rev": "c1c06c9071048e198a5ee762f88b75a1f3e722d4",
+        "rev": "bcadd8552f3ae7bb01be227fa265b80e24897465",
         "type": "github"
       },
       "original": {
-        "owner": "ushironoko",
-        "ref": "v0.6.6",
+        "owner": "DxCx",
+        "ref": "feat/local-commit-range-review",
         "repo": "octorus",
         "type": "github"
       }
