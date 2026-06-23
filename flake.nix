@@ -33,14 +33,13 @@
       flake = false;
     };
 
-    # octorus (the `or` binary) source, pinned to an upstream release tag.
+    # octorus (the `or` binary) source, pinned to a fork branch.
     # We build it ourselves (module/octorus.nix) instead of taking pkgs.octorus
-    # so the version tracks upstream releases directly rather than waiting for a
-    # nixpkgs bump. Renovate's nix manager (github-tags datasource) bumps the
-    # tag below as new releases land; cargoLock.lockFile reads vendored-dep
-    # hashes from the source's own Cargo.lock, so there are no hashes to update.
+    # so the version tracks the source directly rather than waiting for a
+    # nixpkgs bump. cargoLock.lockFile reads vendored-dep hashes from the
+    # source's own Cargo.lock, so there are no hashes to update.
     octorus-src = {
-      url = "github:ushironoko/octorus/v0.6.6";
+      url = "github:DxCx/octorus/feat/local-commit-range-review";
       flake = false;
     };
   };
