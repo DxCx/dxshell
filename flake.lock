@@ -282,11 +282,11 @@
     "octorus-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1782138781,
-        "narHash": "sha256-SwPjoUSCqN8oMJQ6nb0clGEhrOI11lhgyF/FGanWBoc=",
+        "lastModified": 1782212113,
+        "narHash": "sha256-jk3hPPHdSmyRKPmDsjae2zrych21Zt0jUR5MVScRWg4=",
         "owner": "DxCx",
         "repo": "octorus",
-        "rev": "bcadd8552f3ae7bb01be227fa265b80e24897465",
+        "rev": "d82130271a2243e07094f2320b84444913e8e29a",
         "type": "github"
       },
       "original": {
