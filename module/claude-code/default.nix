@@ -106,6 +106,13 @@
   enabledPlugins = officialEnabled // communityEnabled // localEnabled // ccp.extra;
   marketplaces = communityMarkets // localMarkets // ccCfg.marketplaces;
 
+  # User-level memory (~/.claude/CLAUDE.md): baseline working rules Claude Code
+  # reads in every repo, with an optional user-supplied appendix.
+  rulesText =
+    builtins.readFile ./rules.md
+    + lib.optionalString (ccCfg.extraRules != "") ("\n" + ccCfg.extraRules + "\n");
+  memoryFile = pkgs.writeText "claude-CLAUDE.md" rulesText;
+
   baseSettings = import ./settings.nix {
     inherit lib pkgs ccCfg statuslinePath formatPath enabledPlugins marketplaces;
   };
@@ -135,6 +142,24 @@ in {
       home.file.".claude/settings.json" = {
         source = settingsFile;
         force = true;
+      };
+    })
+    (lib.mkIf ccCfg.manageMemory {
+      # force = true so HM clobbers a pre-existing CLAUDE.md rather than failing
+      # activation. This file is fully Nix-generated policy (edit it through
+      # claudeCode.extraRules, not by hand); Claude Code's `#` memory shortcut
+      # can't write to the read-only store symlink, which is intentional here.
+      home.file.".claude/CLAUDE.md" = {
+        source = memoryFile;
+        force = true;
+      };
+    })
+    (lib.mkIf ccCfg.manageSkills {
+      # recursive = true symlinks each skill file individually, so bundled
+      # skills coexist with any the user drops into ~/.claude/skills by hand.
+      home.file.".claude/skills" = {
+        source = ./skills;
+        recursive = true;
       };
     })
   ]);

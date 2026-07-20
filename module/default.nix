@@ -86,6 +86,36 @@
           pre-existing non-symlink at that path either way).
         '';
       };
+      manageMemory = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Deploy an opinionated ~/.claude/CLAUDE.md (user-level memory) holding
+          baseline working rules Claude Code applies in every repo — notably git
+          commit discipline (back up continuously, never amend, use fixup
+          commits, stamp the exact model, no Claude-Session trailer). Disable to
+          hand-manage that file yourself.
+        '';
+      };
+      extraRules = lib.mkOption {
+        type = lib.types.lines;
+        default = "";
+        description = ''
+          Extra Markdown appended to the managed ~/.claude/CLAUDE.md. Use this to
+          add your own user-level rules without dropping the baseline ones.
+        '';
+      };
+      manageSkills = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Deploy dxshell's bundled personal skills into ~/.claude/skills
+          (/align-commits — walk an interactive rebase commit by commit,
+          self-reviewing and re-messaging each; /solve-conflicts — resolve rebase
+          conflicts honouring both sides). Each is a per-file symlink, so your
+          own skills in that directory are left untouched.
+        '';
+      };
       notifyOnStop = lib.mkOption {
         type = lib.types.bool;
         default = true;

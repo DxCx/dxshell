@@ -49,6 +49,11 @@
       EDITOR = "nvim";
     };
 
+    # Suppress Claude Code's built-in generic "Co-Authored-By: Claude" /
+    # "Generated with Claude Code" byline so the exact-model Co-Authored-By
+    # trailer mandated by the managed ~/.claude/CLAUDE.md rules is the only one.
+    includeCoAuthoredBy = false;
+
     # Retain sessions, orphaned worktrees, tasks and backups longer than the
     # 30-day default so octorus rally state and review sessions stick around.
     inherit (ccCfg) cleanupPeriodDays;
