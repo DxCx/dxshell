@@ -66,11 +66,11 @@
         "sidekick-nvim": "sidekick-nvim"
       },
       "locked": {
-        "lastModified": 1787375742,
-        "narHash": "sha256-xAfmKPN/oP+zpb94s2JcmW1DzK1KAy3XVk1UhK0IebE=",
+        "lastModified": 1787452789,
+        "narHash": "sha256-RHTaPwsAOquEmCruwgzp3OCnvOT0Adme5lHFmRE670o=",
         "owner": "DxCx",
         "repo": "dxvim",
-        "rev": "1d0abf3c4fbf88427c20d172b1653986bf7a8f4f",
+        "rev": "5d76994398361f1ec3d2eeb42249fdeb10f54155",
         "type": "github"
       },
       "original": {
@@ -242,11 +242,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787336864,
-        "narHash": "sha256-ITJ2a5gbWjrG8DHX1XKrNo5TEpaJYBG+KQA5Hlvlkt0=",
+        "lastModified": 1787432068,
+        "narHash": "sha256-IwY4Dfd5xCnNo66Jx2CCyVRkIuZ9ub59v8+E6kVVlIY=",
         "owner": "notashelf",
         "repo": "nvf",
-        "rev": "af19044ebe20d43f4fc4d4851e8c78760a9a2d46",
+        "rev": "45ad22485d23bf131e3543eb7de16d0adf274e8b",
         "type": "github"
       },
       "original": {
