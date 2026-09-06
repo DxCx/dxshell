@@ -274,6 +274,15 @@ fi
 
 export DXSHELL_DIR
 
+# Flake reference for the checkout. This must be git+file: and never path:.
+# path: copies the whole directory into the store, .git included, and Nix cannot
+# serialise non-regular files. Git's fsmonitor daemon — which dxshell's own git
+# config enables — leaves a unix socket at .git/fsmonitor--daemon.ipc, so every
+# path: build fails with "has an unsupported type". git+file: reads the work tree
+# through git, so .git is never copied, and the store path is keyed on the commit
+# instead of churning on every fetch.
+DXSHELL_FLAKE_REF="git+file://$DXSHELL_DIR"
+
 # ---------------------------------------------------------------------------
 # 6. Mode-specific steps
 # ---------------------------------------------------------------------------
@@ -291,7 +300,7 @@ case "$MODE" in
         # shellcheck disable=SC2016 # expands at launch time, inside the launcher
         echo 'export NP_RUNTIME="${NP_RUNTIME:-proot}"'
         echo "export DXSHELL_STATE_DIR='$DXSHELL_BASE/state'"
-        echo "exec '$DXSHELL_BASE/.local/bin/nix-portable' nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config 'path:$DXSHELL_DIR'"
+        echo "exec '$DXSHELL_BASE/.local/bin/nix-portable' nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config '$DXSHELL_FLAKE_REF'"
       } >"$DXSHELL_BASE/.local/bin/dxshell"
       chmod +x "$DXSHELL_BASE/.local/bin/dxshell"
 
@@ -314,7 +323,7 @@ case "$MODE" in
       echo ""
       echo "Building dxshell (the first build may take a while)..."
       # shellcheck disable=SC2086
-      $NIX_CMD build --no-link --accept-flake-config "path:$DXSHELL_DIR"
+      $NIX_CMD build --no-link --accept-flake-config "$DXSHELL_FLAKE_REF"
       echo ""
       echo "dxshell installed. Launch it with:"
       echo "  $LOCAL_PARENT/dxshell"
@@ -329,7 +338,7 @@ case "$MODE" in
     {
       echo '#!/bin/sh'
       echo "export DXSHELL_FLAKE='$DXSHELL_DIR'"
-      echo "exec $NIX_CMD --extra-experimental-features 'nix-command flakes' run --accept-flake-config 'path:$DXSHELL_DIR'"
+      echo "exec $NIX_CMD --extra-experimental-features 'nix-command flakes' run --accept-flake-config '$DXSHELL_FLAKE_REF'"
     } >"$_HOME/.local/bin/dxshell"
     chmod +x "$_HOME/.local/bin/dxshell"
     echo ""
@@ -348,13 +357,13 @@ case "$MODE" in
     echo "Starting dxshell..."
     export DXSHELL_FLAKE="$DXSHELL_DIR"
     # shellcheck disable=SC2086
-    exec $NIX_CMD run --accept-flake-config "path:$DXSHELL_DIR"
+    exec $NIX_CMD run --accept-flake-config "$DXSHELL_FLAKE_REF"
     ;;
 
   install)
     echo ""
     echo "Running permanent install..."
     # shellcheck disable=SC2086
-    $NIX_CMD run --accept-flake-config "path:$DXSHELL_DIR#dxshell-install"
+    $NIX_CMD run --accept-flake-config "$DXSHELL_FLAKE_REF#dxshell-install"
     ;;
 esac
