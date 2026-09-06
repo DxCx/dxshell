@@ -87,6 +87,21 @@ pkgs.runCommand "test-scripts" {
   check "updater contains fetch origin" grep -q 'fetch origin' "$updater"
 
   echo ""
+  echo "=== Flake refs never use path: (it copies .git) ==="
+  # Regression: a path: flake ref copies the whole checkout into the store, .git
+  # included, and Nix cannot serialise non-regular files. dxshell enables git's
+  # fsmonitor (module/git.nix), whose daemon leaves a unix socket at
+  # .git/fsmonitor--daemon.ipc — so every rebuild died with "file
+  # '.../.git/fsmonitor--daemon.ipc' has an unsupported type". The updater's own
+  # `git fetch` was enough to start that daemon, making updates self-destruct.
+  # git+file: reads the work tree through git, so .git is never copied.
+  setup_sh="${../bin/setup.sh}"
+  check_not "updater builds no path: flake ref" grep -qE 'path:\$' "$updater"
+  check "updater uses a git+file: flake ref" grep -q 'git+file://' "$updater"
+  check_not "setup.sh builds no path: flake ref" grep -qE 'path:\$' "$setup_sh"
+  check "setup.sh uses a git+file: flake ref" grep -q 'git+file://' "$setup_sh"
+
+  echo ""
   echo "=== Nix store paths are valid ==="
   for script in "$wrapper" "$installer" "$updater"; do
     name="$(basename "$script")"

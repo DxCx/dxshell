@@ -152,13 +152,23 @@ DXSHELL_BIN="${REAL_HOME}/.local/bin/dxshell"
 export NIX_CONFIG="experimental-features = nix-command flakes
 ${NIX_CONFIG:-}"
 
+# Flake reference for the checkout. This must be git+file: and never path:.
+# path: copies the whole directory into the store, .git included, and Nix cannot
+# serialise non-regular files. Git's fsmonitor daemon — which dxshell's own git
+# config enables — leaves a unix socket at .git/fsmonitor--daemon.ipc, so every
+# path: build fails with "has an unsupported type". The fetch above is enough to
+# start that daemon, which made every update self-destruct. git+file: reads the
+# work tree through git, so .git is never copied, and the store path is keyed on
+# the commit instead of churning on every fetch.
+DXSHELL_FLAKE_REF="git+file://${DXSHELL_DIR}"
+
 if [ -L "$DXSHELL_BIN" ]; then
   LINK_TARGET=$(readlink "$DXSHELL_BIN")
   case "$LINK_TARGET" in
     /nix/store/*)
       # Install mode: the symlink points into the nix store
       echo "dxshell-update: install mode detected, rebuilding..."
-      nix run --accept-flake-config "path:${DXSHELL_DIR}#dxshell-install"
+      nix run --accept-flake-config "${DXSHELL_FLAKE_REF}#dxshell-install"
       echo ""
       echo "dxshell updated successfully. Restart your shell to use the new version."
       exit 0
@@ -168,4 +178,4 @@ fi
 
 # Standalone mode: replace current shell with the updated one
 echo "dxshell-update: standalone mode detected, rebuilding..."
-exec nix run --accept-flake-config "path:${DXSHELL_DIR}"
+exec nix run --accept-flake-config "${DXSHELL_FLAKE_REF}"
