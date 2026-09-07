@@ -80,14 +80,12 @@ if [ -n "$DXSHELL_BASE" ]; then
   LOCAL_PARENT="${DXSHELL_BASE%/*}"
   export DXSHELL_BASE
   mkdir -p "$DXSHELL_BASE"
-  # The whole tree (store, state, clone) lives under the base. Leave NP_RUNTIME
-  # alone unless the caller set it: nix-portable already probes bwrap and falls
-  # back to proot by itself, and hardcoding proot here overrode that probe with
-  # a guess on every host. The launcher below re-probes per run.
+  # The whole tree (store, state, clone) lives under the base, and proot avoids
+  # bwrap's unprivileged user namespace, where root is unmapped and every
+  # root-owned file reports uid 65534. NP_RUNTIME stays overridable.
   export NP_LOCATION="$DXSHELL_BASE"
-  if [ -n "${NP_RUNTIME:-}" ]; then
-    export NP_RUNTIME
-  fi
+  NP_RUNTIME="${NP_RUNTIME:-proot}"
+  export NP_RUNTIME
 fi
 
 # Directory: env > local base > default (positional may have been set above)
@@ -299,23 +297,15 @@ case "$MODE" in
         echo '#!/bin/sh'
         echo "export DXSHELL_FLAKE='$DXSHELL_DIR'"
         echo "export NP_LOCATION='$DXSHELL_BASE'"
-        # Prefer bwrap. proot ptraces every process, so it costs a round-trip
-        # on every syscall and the kernel refuses execute-only host binaries
-        # (mode 111 -- sudo on RHEL/Rocky is one, which fails as a bare
-        # "permission denied"). bwrap has neither problem wherever unprivileged
-        # user namespaces are allowed, so probe rather than assume, and fall
-        # back to proot only on hosts that actually block them. Still
-        # overridable per run: NP_RUNTIME=proot ./dxshell
-        cat <<'NP_PROBE'
-if [ -z "${NP_RUNTIME:-}" ] && [ -x "$NP_LOCATION/.nix-portable/bin/bwrap" ]; then
-  if "$NP_LOCATION/.nix-portable/bin/bwrap" --dev-bind / / /bin/true 2>/dev/null; then
-    NP_RUNTIME=bwrap
-  else
-    NP_RUNTIME=proot
-  fi
-  export NP_RUNTIME
-fi
-NP_PROBE
+        # Default to proot. bwrap is faster (no ptrace) and can exec
+        # execute-only host binaries, but it maps the sandbox into an
+        # unprivileged user namespace where root is unmapped, so every
+        # root-owned file reports uid 65534. Anything that checks ownership
+        # then misfires -- notably compaudit, which flags every root-owned
+        # fpath entry as insecure and makes compinit prompt on each new shell.
+        # Opt in per run where that trade is worth it: NP_RUNTIME=bwrap ./dxshell
+        # shellcheck disable=SC2016 # expands at launch time, inside the launcher
+        echo 'export NP_RUNTIME="${NP_RUNTIME:-proot}"'
         # dxshell-host runs commands back out on the host, where /nix does not
         # exist; capture the real PATH before the sandbox replaces it.
         # shellcheck disable=SC2016 # expands at launch time, inside the launcher

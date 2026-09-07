@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.s
 
 Everything — the `nix-portable` binary, its Nix store, the repo clone, and all shell state — lives in one self-contained `./.dxshell/` tree, with a `./dxshell` launcher symlink next to it. Nothing is written to `$HOME`, no sudo, no `/nix`. Unlike the other flavors, this one **installs and builds but does not start a session** — launch it yourself with `./dxshell`. To update, re-run the same one-liner from the same directory.
 
-It picks nix-portable's backend per launch: `bwrap` where unprivileged user namespaces are available, falling back to `proot` on hardened hosts that block them. Override with `NP_RUNTIME=proot ./dxshell`. Prefer bwrap where you can — `proot` ptraces every process, which costs a round-trip on every syscall and makes the kernel refuse execute-only host binaries (mode `111`, which is how `sudo` ships on RHEL/Rocky; it fails as a bare `permission denied`).
+It defaults to nix-portable's `proot` backend. `bwrap` is genuinely faster — proot ptraces every process, so each syscall pays a round-trip, and proot cannot exec an execute-only host binary at all (mode `111`, which is how `sudo` ships on RHEL/Rocky). But bwrap runs the shell in an unprivileged user namespace where root is unmapped, so every root-owned file reports uid `65534`, and anything that inspects ownership misfires — most visibly `compaudit`, which then flags every root-owned `fpath` entry as insecure and makes `compinit` prompt on each new shell. Opt in with `NP_RUNTIME=bwrap ./dxshell` where that trade is worth it.
 
 #### Privileged commands (`sudo`) inside dxshell
 
