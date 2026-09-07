@@ -26,29 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.s
 
 Everything — the `nix-portable` binary, its Nix store, the repo clone, and all shell state — lives in one self-contained `./.dxshell/` tree, with a `./dxshell` launcher symlink next to it. Nothing is written to `$HOME`, no sudo, no `/nix`. Unlike the other flavors, this one **installs and builds but does not start a session** — launch it yourself with `./dxshell`. To update, re-run the same one-liner from the same directory.
 
-It also forces nix-portable's `proot` backend, which works on hardened hosts that block the namespaces `bwrap` needs (override per run with `NP_RUNTIME=bwrap ./dxshell` if your host allows them).
-
-To install under a different directory without `cd`-ing there, pass it explicitly:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --local-dir-install=/path/on/local/disk
-```
-
-### Server — with sudo
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --system
-```
-
-Installs Nix in multi-user mode (daemon at `/nix`, shared by all users). Prompts for sudo once during the Nix install.
-
-For permanent install (sets dxshell as your login shell), append `install`:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --system install
-```
-
-If you'd rather install Nix yourself or wire things up by hand, see [Manual setup](#manual-setup) below.
+It picks nix-portable's backend per launch: `bwrap` where unprivileged user namespaces are available, falling back to `proot` on hardened hosts that block them. Override with `NP_RUNTIME=proot ./dxshell`. Prefer bwrap where you can — `proot` ptraces every process, which costs a round-trip on every syscall and makes the kernel refuse execute-only host binaries (mode `111`, which is how `sudo` ships on RHEL/Rocky; it fails as a bare `permission denied`).
 
 ## What's Included
 
