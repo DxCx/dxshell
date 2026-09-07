@@ -28,6 +28,41 @@ Everything — the `nix-portable` binary, its Nix store, the repo clone, and all
 
 It picks nix-portable's backend per launch: `bwrap` where unprivileged user namespaces are available, falling back to `proot` on hardened hosts that block them. Override with `NP_RUNTIME=proot ./dxshell`. Prefer bwrap where you can — `proot` ptraces every process, which costs a round-trip on every syscall and makes the kernel refuse execute-only host binaries (mode `111`, which is how `sudo` ships on RHEL/Rocky; it fails as a bare `permission denied`).
 
+#### Privileged commands (`sudo`) inside dxshell
+
+Without a system Nix, nix-portable has to make `/nix/store` paths resolve for an unprivileged user, and it does that by confining the shell. **No backend can run a setuid binary**, and that is kernel behaviour rather than a bug: under `proot`, `execve(2)` ignores the set-user-ID bit for a traced process; under `bwrap`, the file's root owner is unmapped in the user namespace, so `sudo` reports `must be owned by uid 0 and have the setuid bit set`.
+
+So dxshell runs privileged commands *outside* the sandbox instead, the same portal pattern as `flatpak-spawn --host` and `distrobox-host-exec`:
+
+```bash
+sudo dnf install ...        # shimmed transparently
+dxshell-host systemctl ...  # anything else, run on the host
+```
+
+This grants no new privilege — the command runs as the same uid, in the same login session, under the same sudoers policy you already have from a plain shell. It reaches the host via your `systemd --user` manager (started by logind, outside the sandbox), falling back to `ssh localhost`. Only host binaries can run this way: the host cannot see `/nix`, so `dxshell-host rg` gets `/usr/bin/rg`, not dxshell's. Turn it off with `dxshell.hostExec.enable = false`, or keep the command and drop the shims with `dxshell.hostExec.shimSudo = false`. All of this is a no-op with a system Nix install, where there is no sandbox to escape.
+
+To install under a different directory without `cd`-ing there, pass it explicitly:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --local-dir-install=/path/on/local/disk
+```
+
+### Server — with sudo
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --system
+```
+
+Installs Nix in multi-user mode (daemon at `/nix`, shared by all users). Prompts for sudo once during the Nix install.
+
+For permanent install (sets dxshell as your login shell), append `install`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --system install
+```
+
+If you'd rather install Nix yourself or wire things up by hand, see [Manual setup](#manual-setup) below.
+
 ## What's Included
 
 ### Shell
