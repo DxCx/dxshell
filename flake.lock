@@ -66,11 +66,11 @@
         "sidekick-nvim": "sidekick-nvim"
       },
       "locked": {
-        "lastModified": 1788487030,
-        "narHash": "sha256-MQZF/CFQqoHSZE5+NhVTmmhZIIIlqOH5vYUke+Cve6E=",
+        "lastModified": 1788692924,
+        "narHash": "sha256-/S1DSqEhvuNik7AzhVlniW+HjRUEQehZqX0DFA1Eg+0=",
         "owner": "DxCx",
         "repo": "dxvim",
-        "rev": "cb9a5a93b3048e462e5d6fbc9d2ef6ce56f34e57",
+        "rev": "98abfec572c46f6456cb1999e43dde6a40f77037",
         "type": "github"
       },
       "original": {
