@@ -317,7 +317,11 @@ if [ -z "${NP_RUNTIME:-}" ] && [ -x "$NP_LOCATION/.nix-portable/bin/bwrap" ]; th
 fi
 NP_PROBE
         echo "export DXSHELL_STATE_DIR='$DXSHELL_BASE/state'"
-        echo "exec '$DXSHELL_BASE/.local/bin/nix-portable' nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config '$DXSHELL_FLAKE_REF'"
+        # Forward argv: the wrapper handles `dxshell -c '...'` (how ssh, tmux
+        # and vim's :terminal invoke $SHELL), but `nix run` swallows arguments
+        # unless they follow a `--`.
+        # shellcheck disable=SC2016 # expands at launch time, inside the launcher
+        echo "exec '$DXSHELL_BASE/.local/bin/nix-portable' nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config '$DXSHELL_FLAKE_REF' -- \"\$@\""
       } >"$DXSHELL_BASE/.local/bin/dxshell"
       chmod +x "$DXSHELL_BASE/.local/bin/dxshell"
 
