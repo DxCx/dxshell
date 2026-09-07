@@ -316,6 +316,10 @@ if [ -z "${NP_RUNTIME:-}" ] && [ -x "$NP_LOCATION/.nix-portable/bin/bwrap" ]; th
   export NP_RUNTIME
 fi
 NP_PROBE
+        # dxshell-host runs commands back out on the host, where /nix does not
+        # exist; capture the real PATH before the sandbox replaces it.
+        # shellcheck disable=SC2016 # expands at launch time, inside the launcher
+        echo 'export DXSHELL_HOST_PATH="$PATH"'
         echo "export DXSHELL_STATE_DIR='$DXSHELL_BASE/state'"
         # Forward argv: the wrapper handles `dxshell -c '...'` (how ssh, tmux
         # and vim's :terminal invoke $SHELL), but `nix run` swallows arguments

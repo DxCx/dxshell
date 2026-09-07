@@ -32,6 +32,34 @@
       description = "Enable CLI tools (bat, eza, bottom, dust, direnv).";
     };
 
+    hostExec = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Install `dxshell-host`, which runs a command on the host outside the
+          nix-portable sandbox.
+
+          Without a system Nix, nix-portable confines the shell so /nix/store
+          resolves unprivileged — proot by ptracing it, bwrap via a user
+          namespace. The kernel drops the setuid bit in both cases, so sudo and
+          friends cannot work inside under any backend. This runs them outside
+          instead, the way flatpak-spawn --host does. No-op with a system Nix
+          install, where there is no sandbox to escape.
+        '';
+      };
+      shimSudo = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Also install `sudo` and `sudoedit` shims ahead of the host ones on
+          PATH, so they keep working unchanged inside dxshell — in scripts and
+          Makefiles, not just at an interactive prompt. Disable to leave the
+          host binaries unshadowed and call `dxshell-host sudo ...` explicitly.
+        '';
+      };
+    };
+
     allowUnfree = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -370,6 +398,7 @@
     ./git.nix
     ./core.nix
     ./cli-tools.nix
+    ./host-exec.nix
     ./lsp.nix
     ./claude-code
     ./octorus.nix
