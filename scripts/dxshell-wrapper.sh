@@ -124,6 +124,31 @@ export PATH="${DXSHELL_HOME}/.nix-profile/bin${PATH:+:$PATH}"
 # user's login shell (e.g. bash) without any dxshell configuration.
 export SHELL="@ZSH@/bin/zsh"
 
+# zsh seeds fpath from $FPATH when that variable is set in the environment,
+# *replacing* its compiled-in default rather than adding to it. Hosts that
+# export FPATH -- lmod does, for the ksh/zsh `module` function, so every HPC and
+# EDA box does -- therefore strip zsh's own function directory, and every
+# autoload fails at once: compinit, add-zsh-hook, is-at-least, vcs_info. That
+# surfaces as a wall of "function definition file not found" plus a dead
+# powerlevel10k prompt.
+#
+# Put zsh's functions back at the front rather than unsetting FPATH, so the
+# host's own entries keep working and `module` still resolves inside dxshell.
+if [ -n "${FPATH:-}" ]; then
+  for _dxshell_zsh_fns in @ZSH@/share/zsh/*/functions; do
+    [ -d "${_dxshell_zsh_fns}" ] || continue
+    case ":${FPATH}:" in
+      *":${_dxshell_zsh_fns}:"*) ;;
+      *)
+        FPATH="${_dxshell_zsh_fns}:${FPATH}"
+        export FPATH
+        ;;
+    esac
+    break
+  done
+  unset _dxshell_zsh_fns
+fi
+
 # Directory-managed logins (LDAP / SSSD / NIS): gitFull's compiled-in ssh is a
 # Nix-glibc openssh, which cannot load the host's NSS modules and so fails
 # getpwuid for any uid not in the static /etc/passwd ("No user exists for uid
