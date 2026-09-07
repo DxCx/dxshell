@@ -17,12 +17,12 @@
 #              Fully self-contained install under DIR/.dxshell ($PWD/.dxshell
 #              when no value is given): nix-portable binary, Nix store, repo
 #              clone, and Home Manager state all live inside that one tree,
-#              and an entry symlink DIR/dxshell is created next to it. The
-#              launcher probes for unprivileged user namespaces per run and
-#              picks bwrap when they work, falling back to proot on hardened
-#              hosts that block them (override with NP_RUNTIME). Made for hosts
-#              with an NFS-mounted $HOME and no root access — point it at a
-#              local disk.
+#              and an entry symlink DIR/dxshell is created next to it. Defaults
+#              to the proot backend (NP_RUNTIME=proot, overridable at runtime);
+#              bwrap is faster but unmaps root in its user namespace, which
+#              breaks ownership checks such as compaudit. Made for hosts with
+#              an NFS-mounted $HOME and no root access — point it at a local
+#              disk.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/DxCx/dxshell/master/bin/bootstrap.sh | sh -s -- --user
