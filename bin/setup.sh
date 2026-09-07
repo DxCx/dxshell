@@ -80,12 +80,14 @@ if [ -n "$DXSHELL_BASE" ]; then
   LOCAL_PARENT="${DXSHELL_BASE%/*}"
   export DXSHELL_BASE
   mkdir -p "$DXSHELL_BASE"
-  # The whole tree (store, state, clone) lives under the base, and the proot
-  # backend avoids bwrap's nested mount namespaces, which hardened hosts
-  # block. NP_RUNTIME stays overridable for hosts where bwrap works.
+  # The whole tree (store, state, clone) lives under the base. Leave NP_RUNTIME
+  # alone unless the caller set it: nix-portable already probes bwrap and falls
+  # back to proot by itself, and hardcoding proot here overrode that probe with
+  # a guess on every host. The launcher below re-probes per run.
   export NP_LOCATION="$DXSHELL_BASE"
-  NP_RUNTIME="${NP_RUNTIME:-proot}"
-  export NP_RUNTIME
+  if [ -n "${NP_RUNTIME:-}" ]; then
+    export NP_RUNTIME
+  fi
 fi
 
 # Directory: env > local base > default (positional may have been set above)
@@ -297,8 +299,23 @@ case "$MODE" in
         echo '#!/bin/sh'
         echo "export DXSHELL_FLAKE='$DXSHELL_DIR'"
         echo "export NP_LOCATION='$DXSHELL_BASE'"
-        # shellcheck disable=SC2016 # expands at launch time, inside the launcher
-        echo 'export NP_RUNTIME="${NP_RUNTIME:-proot}"'
+        # Prefer bwrap. proot ptraces every process, so it costs a round-trip
+        # on every syscall and the kernel refuses execute-only host binaries
+        # (mode 111 -- sudo on RHEL/Rocky is one, which fails as a bare
+        # "permission denied"). bwrap has neither problem wherever unprivileged
+        # user namespaces are allowed, so probe rather than assume, and fall
+        # back to proot only on hosts that actually block them. Still
+        # overridable per run: NP_RUNTIME=proot ./dxshell
+        cat <<'NP_PROBE'
+if [ -z "${NP_RUNTIME:-}" ] && [ -x "$NP_LOCATION/.nix-portable/bin/bwrap" ]; then
+  if "$NP_LOCATION/.nix-portable/bin/bwrap" --dev-bind / / /bin/true 2>/dev/null; then
+    NP_RUNTIME=bwrap
+  else
+    NP_RUNTIME=proot
+  fi
+  export NP_RUNTIME
+fi
+NP_PROBE
         echo "export DXSHELL_STATE_DIR='$DXSHELL_BASE/state'"
         echo "exec '$DXSHELL_BASE/.local/bin/nix-portable' nix --extra-experimental-features 'nix-command flakes' run --accept-flake-config '$DXSHELL_FLAKE_REF'"
       } >"$DXSHELL_BASE/.local/bin/dxshell"
